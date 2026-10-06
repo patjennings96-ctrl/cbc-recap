@@ -82,7 +82,21 @@ ul.plain{list-style:none;margin:0;padding:0} ul.plain li{padding:6px 0;border-bo
 #status{padding:40px 0;text-align:center;color:var(--muted)}
 #status button{margin-top:12px;background:var(--accent);color:#111;border:0;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer}
 footer{margin-top:40px;color:var(--muted);font-size:12px;text-align:center}
-@media print{.bar{display:none}body{background:#fff;color:#000}}
+html{scroll-behavior:smooth} section{scroll-margin-top:66px}
+#nav,#navBtn{display:none}
+#nav a{flex:none;color:var(--muted);text-decoration:none;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);white-space:nowrap}
+#nav a:hover{color:var(--ink);border-color:var(--muted)}
+#nav a.on{background:var(--accent);color:#111;border-color:var(--accent)}
+body.nav-top #nav{display:flex;position:sticky;top:0;z-index:20;gap:6px;overflow-x:auto;padding:10px 16px;margin:0 -16px 16px;background:rgba(13,16,21,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);scrollbar-width:none}
+body.nav-top #nav::-webkit-scrollbar{display:none}
+body.nav-side section{scroll-margin-top:18px}
+body.nav-side #nav{display:flex;flex-direction:column;align-items:flex-start;position:fixed;left:16px;top:50%;transform:translateY(-50%);z-index:20;gap:6px;max-height:92vh;overflow:auto}
+@media(max-width:1439px){
+  body.nav-side #nav{display:none;top:auto;bottom:66px;left:12px;transform:none;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);max-height:70vh}
+  body.nav-side #nav.open{display:flex}
+  body.nav-side #navBtn{display:block;position:fixed;left:12px;bottom:14px;z-index:21;background:var(--accent);color:#111;border:0;border-radius:999px;padding:10px 16px;font:700 13px Inter,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.5);cursor:pointer}
+}
+@media print{#nav,#navBtn{display:none!important}.bar{display:none}body{background:#fff;color:#000}}
 </style>
 </head>
 <body>
@@ -94,6 +108,8 @@ footer{margin-top:40px;color:var(--muted);font-size:12px;text-align:center}
     <button id="copyBtn">Copy text recap</button>
     <button id="reBtn">Refresh</button>
   </div>
+  <nav id="nav" aria-label="Sections"></nav>
+  <button id="navBtn" type="button">☰ Sections</button>
   <div id="status">Loading from Sleeper…</div>
   <div id="app"></div>
   <footer>Data: Sleeper public API · Odds are simulations, not promises · Dashed-underlined text is editable and saved in this browser.</footer>
@@ -106,6 +122,7 @@ const CONFIG = {
   leagueId: '1312079813514661888', // The Cuckboys Championship (2026). Sleeper issues a new ID each season — update it here next year.
   stake: 5,               // weekly high-score payout, paid by the low score
   sims: 10000,            // playoff simulations
+  nav: 'top',             // section navigation: 'top' (sticky tab bar), 'side' (floating tabs on the left), or 'none'
   shrinkWeeks: 3,         // how strongly early-season averages are pulled toward league average
   medianTracker: 'dabears544',  // manager (Sleeper username or team name) to track against the median all season
   tradeTracker: 'evanmoon2',    // manager whose trades get a KeepTradeCut value ledger
@@ -837,8 +854,29 @@ function render(W){
   }
 
   $('app').innerHTML = h;
+  buildNav();
   G.text = () => T.map(x => typeof x === 'function' ? x() : x).join('\n').trim();
 }
+
+/* ---------------- section navigation ---------------- */
+const NAV_LABELS = [[/^the \$/i, () => '$' + CONFIG.stake], [/scoreboard/i, 'Scores'], [/awards/i, 'Awards'], [/median watch/i, 'Median'], [/vs\. the median/i, t => t.split(/ vs\. /i)[0]], [/report card/i, 'Coaching'],
+  [/preview|up next/i, 'Next week'], [/power rank/i, 'Power'], [/schedule luck/i, 'Luck'], [/odds/i, 'Odds'], [/race for/i, '1.01'], [/trade market/i, 'Market'], [/trade ledger/i, t => t.split(/['\u2019]s trade/i)[0] + ' trades'], [/trophy/i, 'Trophies'], [/record book/i, 'Records']];
+let navSpy = null;
+function buildNav(){
+  const mode = qs.get('nav') || CONFIG.nav || 'none', nav = $('nav'); document.body.classList.remove('nav-top', 'nav-side');
+  if (mode !== 'top' && mode !== 'side') { nav.innerHTML = ''; return; }
+  document.body.classList.add('nav-' + mode);
+  const secs = [...document.querySelectorAll('#app section')];
+  nav.innerHTML = secs.map((s, i) => { s.id = 'sec' + i; const h2 = s.querySelector('h2'), t = (h2 && h2.firstChild ? h2.firstChild.textContent : '').trim();
+    const m = NAV_LABELS.find(x => x[0].test(t)), lab = m ? (typeof m[1] === 'function' ? m[1](t) : m[1]) : t;
+    return `<a href="#sec${i}">${esc(lab)}</a>`; }).join('');
+  if (navSpy) navSpy.disconnect();
+  const links = [...nav.querySelectorAll('a')], setOn = i => { links.forEach((a, j) => a.classList.toggle('on', i === j)); if (mode === 'top' && links[i]) nav.scrollLeft = links[i].offsetLeft - nav.clientWidth / 2 + links[i].clientWidth / 2; };
+  navSpy = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) setOn(secs.indexOf(e.target)); }); }, { rootMargin: '-25% 0px -65% 0px' });
+  secs.forEach(s => navSpy.observe(s)); setOn(0);
+  nav.onclick = () => nav.classList.remove('open');
+}
+$('navBtn').onclick = () => $('nav').classList.toggle('open');
 
 /* ---------------- controls ---------------- */
 $('leagueSel').onchange = e => { store.set('recap_league', e.target.value); loadLeague(e.target.value).catch(fail); };
