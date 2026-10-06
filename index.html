@@ -128,7 +128,8 @@ const CONFIG = {
     rivalry: true,        // all-time head-to-head line in the preview
     recordBook: false,
     medianTracker: true,  // one manager's season against the median
-    tradeValue: true      // one manager's trade ledger in KeepTradeCut value
+    tradeValue: true,     // one manager's trade ledger in KeepTradeCut value
+    tradeMarket: true     // team needs, natural trade partners and suggested deals
   }
 };
 /* =============================================== */
@@ -218,7 +219,7 @@ async function loadLeague(id){
     return { rid: r.roster_id, oid: r.owner_id || 'r' + r.roster_id, owner: u.display_name || 'Team ' + r.roster_id,
       name: (u.metadata && u.metadata.team_name) || u.display_name || 'Team ' + r.roster_id,
       avatar: u.avatar ? `https://sleepercdn.com/avatars/thumbs/${u.avatar}` : '',
-      div: (r.settings && r.settings.division) || 0,
+      div: (r.settings && r.settings.division) || 0, players: r.players || [],
       faabUsed: (r.settings && r.settings.waiver_budget_used) || 0,
       ppts: r.settings && r.settings.ppts ? r.settings.ppts + (r.settings.ppts_decimal || 0) / 100 : 0,
       fpts: r.settings && r.settings.fpts ? r.settings.fpts + (r.settings.fpts_decimal || 0) / 100 : 0, taxi: new Set(r.taxi || []) };
@@ -501,6 +502,44 @@ function ktcEven(inn, out){
   let L = 0, R = KTC_MAX; for (let i = 0; i < 40; i++) { const m = (L + R) / 2; f(m) < 0 ? L = m : R = m; }
   return sg * Math.round((L + R) / 2);
 }
+/* Every trade a roster has made this season, valued at today's KeepTradeCut prices with the package premium. */
+function ledger(rid, W, sim){
+  const D = G.D, n = D.teams.length, ns = String(+D.league.season + 1), mpo = D.teams.map(t => t.rid).sort((a, b) => sim[a].maxpf - sim[b].maxpf);
+      const tierOf = p => { if (String(p.season) !== ns) return 'Mid'; const i = mpo.indexOf(p.roster_id); return i < 0 ? 'Mid' : i < n / 3 ? 'Early' : i < 2 * n / 3 ? 'Mid' : 'Late'; };
+  return D.txns.filter(x => x.type === 'trade' && (x.roster_ids || []).includes(rid) && x.leg <= W + 1).map(x => { const inn = [], out = []; let faab = 0;
+        Object.entries(x.adds || {}).forEach(([id, r]) => { if (r === rid) inn.push(playerAsset(id)); });
+        Object.entries(x.drops || {}).forEach(([id, r]) => { if (r === rid) out.push(playerAsset(id)); });
+        (x.draft_picks || []).forEach(p => { if (p.owner_id === rid && p.previous_owner_id !== rid) inn.push(pickAsset(p, tierOf)); else if (p.previous_owner_id === rid && p.owner_id !== rid) out.push(pickAsset(p, tierOf)); });
+        (x.waiver_budget || []).forEach(b => { if (b.receiver === rid) faab += b.amount; if (b.sender === rid) faab -= b.amount; });
+        const sum = a => a.reduce((t, y) => t + y.v, 0), vin = sum(inn), vout = sum(out);
+        return { x, inn, out, faab, vin, vout, raw: vin - vout, net: ktcEven(inn.map(y => y.v), out.map(y => y.v)), with: (x.roster_ids || []).filter(r => r !== rid) }; });
+}
+/* Positional strength of every roster by KeepTradeCut value: the top few players at each position, ranked across the league. */
+const MK_POS = ['QB', 'RB', 'WR', 'TE'], MK_DEPTH = { QB: 3, RB: 4, WR: 5, TE: 2 };
+function market(sim){
+  const D = G.D, n = D.teams.length, M = {}; if (!G.players) return null;
+  D.teams.forEach(t => { const by = { QB: [], RB: [], WR: [], TE: [] }; let total = 0;
+    t.players.forEach(id => { const p = G.players[id]; if (!p || !by[p[1]]) return; const v = KTCV[ktcNorm(p[0])] || 0; by[p[1]].push({ id, name: p[0], pos: p[1], v }); total += v; });
+    MK_POS.forEach(k => by[k].sort((a, b) => b.v - a.v));
+    const po = sim[t.rid].po;
+    M[t.rid] = { rid: t.rid, by, total, rank: {}, val: Object.fromEntries(MK_POS.map(k => [k, by[k].slice(0, MK_DEPTH[k]).reduce((x, y) => x + y.v, 0)])), outlook: po >= .65 ? 'Contender' : po < .25 ? 'Rebuilder' : 'Bubble' }; });
+  const rids = D.teams.map(t => t.rid);
+  MK_POS.forEach(k => rids.slice().sort((a, b) => M[b].val[k] - M[a].val[k]).forEach((r, i) => M[r].rank[k] = i + 1));
+  rids.slice().sort((a, b) => M[b].total - M[a].total).forEach((r, i) => M[r].totalRank = i + 1);
+  // natural partners: A clearly better at p, B clearly better at q, each on the wrong half of the league at the other's spot
+  const half = n / 2, gap = Math.max(3, Math.round(n * .3)), cand = [];
+  rids.forEach(a => rids.forEach(b => { if (a >= b) return; MK_POS.forEach(p => MK_POS.forEach(q => { if (p === q) return;
+    const A = M[a].rank, B = M[b].rank, g1 = B[p] - A[p], g2 = A[q] - B[q];
+    if (g1 >= gap && g2 >= gap && A[p] <= half && B[q] <= half && A[q] > half && B[p] > half) cand.push({ a, b, p, q, score: g1 + g2 }); })); }));
+  const used = {}, matches = [];
+  cand.sort((x, y) => y.score - x.score).forEach(c => { if (matches.length >= 4 || used[c.a] || used[c.b]) return; used[c.a] = used[c.b] = 1;
+    // conversation starter: a non-cornerstone from each side's surplus that comes out closest to even
+    let best = null; M[c.a].by[c.p].slice(1, 4).forEach(x => M[c.b].by[c.q].slice(1, 4).forEach(y => { if (x.v < 1500 || y.v < 1500) return; const g = ktcEven([y.v], [x.v]); if (!best || Math.abs(g) < Math.abs(best.g)) best = { x, y, g }; }));
+    if (best && Math.abs(best.g) >= 1400) { const yr = +D.league.season + 1, pk = [2, 3, 4].map(r => ({ label: `${yr} ${ord(r)}`, v: KTCV[ktcNorm(`${yr} Mid ${ord(r)}`)] || 0 })).filter(z => z.v).sort((u, v) => Math.abs(u.v - Math.abs(best.g)) - Math.abs(v.v - Math.abs(best.g)))[0];
+      if (pk) best.sweet = { from: best.g > 0 ? c.a : c.b, label: pk.label }; }
+    matches.push(Object.assign(c, { deal: best })); });
+  return { M, matches, n };
+}
 function playerAsset(id){ const nm = pshort(id), v = KTCV[ktcNorm(nm)]; return { label: nm, v: v || 0, miss: v == null }; }
 function pickAsset(p, tierOf){ const D = G.D, slot = D.draft.slotOf[p.roster_id], pid = D.draft.pick[p.round + '-' + slot];
   if (String(p.season) === String(D.league.season) && pid) { const a = playerAsset(pid); return { label: `${p.season} ${p.round}.${String(slot).padStart(2, '0')} (became ${a.label})`, v: a.v, miss: a.miss }; }
@@ -731,21 +770,43 @@ function render(W){
     if (nowA.length && nowA[0].bid) T.push(`💸 Biggest waiver bid: ${name(nowA[0].rid)} — $${nowA[0].bid} on ${pshort(nowA[0].pid)}`, '');
   }
 
+  /* --- trade market --- */
+  if (SHOW.tradeMarket) {
+    const mk = market(sim), dl = (D.league.settings || {}).trade_deadline;
+    h += `<section><h2>Trade Market <small>who needs what</small></h2>`;
+    if (!mk) h += `<div class="card muted">Loading rosters…</div>`;
+    else {
+      const { M, matches, n } = mk, hi = Math.ceil(n * .3), cls = r => r <= hi ? 'up' : r > n - hi ? 'dn' : '';
+      const led = Object.fromEntries(D.teams.map(t => { const r = ledger(t.rid, W, sim); return [t.rid, { n: r.length, net: r.reduce((x, y) => x + y.net, 0) }]; }));
+      const order = D.teams.map(t => t.rid).sort((a, b) => sim[b].po - sim[a].po), quiet = order.filter(r => !led[r].n);
+      const tag = o => `<span class="tag ${o === 'Contender' ? 'acc' : o === 'Rebuilder' ? 'cool' : 'gold'}" style="margin:0">${o === 'Contender' ? 'Buyer' : o === 'Rebuilder' ? 'Seller' : 'Could go either way'}</span>`;
+      h += `<p class="note">${dl && dl >= W ? `<b>${dl - W} week${dl - W === 1 ? '' : 's'} until the trade deadline</b> (after Week ${dl}). ` : ''}Each position shows where a roster ranks in the league on KeepTradeCut value (top ${MK_DEPTH.QB} QBs, ${MK_DEPTH.RB} RBs, ${MK_DEPTH.WR} WRs, ${MK_DEPTH.TE} TEs). Green is a strength to deal from, red is a hole to fill. Buyer/seller comes from playoff odds. Hover a cell for the players.</p>
+        <div class="card scroll"><table class="tbl mx"><tr><th style="text-align:left">Team</th><th style="text-align:left">Outlook</th><th>Playoffs</th>${MK_POS.map(k => `<th>${k}</th>`).join('')}<th>Roster value</th><th>Trades made</th></tr>` +
+        order.map(r => { const m = M[r];
+          return `<tr><td class="t">${esc(name(r))}</td><td style="text-align:left">${tag(m.outlook)}</td><td>${pct(sim[r].po)}</td>${MK_POS.map(k => `<td class="${cls(m.rank[k])}" title="${esc(m.by[k].slice(0, MK_DEPTH[k]).map(x => x.name).join(', ') || 'none ranked')}"><b>${ord(m.rank[k])}</b></td>`).join('')}<td>${ord(m.totalRank)} <span class="muted">${Math.round(m.total / 1000)}k</span></td><td class="${led[r].n ? '' : 'loss'}">${led[r].n || 'none'}</td></tr>`; }).join('') + `</table></div>`;
+      if (matches.length) {
+        h += `<h2 style="font-size:20px;margin-top:18px">Natural trade partners</h2><p class="note">Pairs whose strengths and holes mirror each other. The suggested deal is a conversation starter: one non-cornerstone player from each side's surplus that comes out close to even on KeepTradeCut value with the package premium.</p><div class="grid g2">` +
+          matches.map(c => { const A = M[c.a], B = M[c.b], d = c.deal;
+            const line = (m, s, w) => `<div style="margin:6px 0"><b>${esc(name(m.rid))}</b> <span class="muted">is</span> <span class="win">${ord(m.rank[s])} at ${s}</span> <span class="muted">but</span> <span class="loss">${ord(m.rank[w])} at ${w}</span></div>`;
+            return `<div class="card">${line(A, c.p, c.q)}${line(B, c.q, c.p)}${d ? `<div class="hist" style="font-size:13px;color:var(--ink);border-top:1px solid var(--line);margin-top:10px;padding-top:10px"><span class="tag gold">Conversation starter</span><br>${esc(name(c.a))} sends <b>${esc(d.x.name)}</b> <span class="muted">(${d.x.pos}, ${d.x.v.toLocaleString()})</span>${d.sweet && d.sweet.from === c.a ? ` + a ${esc(d.sweet.label)}` : ''}<br>${esc(name(c.b))} sends <b>${esc(d.y.name)}</b> <span class="muted">(${d.y.pos}, ${d.y.v.toLocaleString()})</span>${d.sweet && d.sweet.from === c.b ? ` + a ${esc(d.sweet.label)}` : ''}</div>` : ''}</div>`; }).join('') + `</div>`;
+        T.push('🤝 TRADE MARKET'); matches.forEach(c => T.push(`${name(c.a)} (deep at ${c.p}, needs ${c.q}) ↔ ${name(c.b)} (deep at ${c.q}, needs ${c.p})${c.deal ? `: ${c.deal.x.name} for ${c.deal.y.name}?` : ''}`)); T.push('');
+      } else h += `<div class="card muted" style="margin-top:12px">No clean strength-for-need pairings this week.</div>`;
+      const act = order.filter(r => led[r].n).sort((a, b) => led[b].net - led[a].net);
+      h += `<h2 style="font-size:20px;margin-top:18px">Trade leaderboard</h2><p class="note">Net KeepTradeCut value from every trade this season, package premium included.</p>
+        <div class="chips">${act.map(r => `<span class="chip">${esc(name(r))} <b class="${led[r].net > 0 ? 'win' : led[r].net < 0 ? 'loss' : 'muted'}">${sgn(led[r].net)}</b> <span class="muted">· ${led[r].n} trade${led[r].n > 1 ? 's' : ''}</span></span>`).join('')}</div>
+        ${quiet.length ? `<p class="note" style="margin-top:10px"><b class="loss">Yet to make a trade this season:</b> ${quiet.map(r => esc(name(r))).join(' · ')}</p>` : ''}`;
+      if (quiet.length) T.push(`📵 No trades yet this season: ${quiet.map(name).join(', ')}`, '');
+    }
+    h += `</section>`;
+  }
+
   /* --- one manager's trades in KeepTradeCut value --- */
   const tvT = SHOW.tradeValue ? findTeam(qs.get('tt') || CONFIG.tradeTracker) : null;
   if (tvT) {
     h += `<section><h2>${esc(tvT.owner)}'s Trade Ledger <small>${esc(tvT.name)} · KeepTradeCut value</small></h2>`;
     if (!G.players) h += `<div class="card muted">Loading player names…</div>`;
     else {
-      const rid = tvT.rid, n = D.teams.length, ns = String(+D.league.season + 1), mpo = D.teams.map(t => t.rid).sort((a, b) => sim[a].maxpf - sim[b].maxpf);
-      const tierOf = p => { if (String(p.season) !== ns) return 'Mid'; const i = mpo.indexOf(p.roster_id); return i < 0 ? 'Mid' : i < n / 3 ? 'Early' : i < 2 * n / 3 ? 'Mid' : 'Late'; };
-      const rows = D.txns.filter(x => x.type === 'trade' && (x.roster_ids || []).includes(rid) && x.leg <= W + 1).map(x => { const inn = [], out = []; let faab = 0;
-        Object.entries(x.adds || {}).forEach(([id, r]) => { if (r === rid) inn.push(playerAsset(id)); });
-        Object.entries(x.drops || {}).forEach(([id, r]) => { if (r === rid) out.push(playerAsset(id)); });
-        (x.draft_picks || []).forEach(p => { if (p.owner_id === rid && p.previous_owner_id !== rid) inn.push(pickAsset(p, tierOf)); else if (p.previous_owner_id === rid && p.owner_id !== rid) out.push(pickAsset(p, tierOf)); });
-        (x.waiver_budget || []).forEach(b => { if (b.receiver === rid) faab += b.amount; if (b.sender === rid) faab -= b.amount; });
-        const sum = a => a.reduce((t, y) => t + y.v, 0), vin = sum(inn), vout = sum(out);
-        return { x, inn, out, faab, vin, vout, raw: vin - vout, net: ktcEven(inn.map(y => y.v), out.map(y => y.v)), with: (x.roster_ids || []).filter(r => r !== rid) }; });
+      const ns = String(+D.league.season + 1), rows = ledger(tvT.rid, W, sim);
       const tot = rows.reduce((t, r) => t + r.net, 0), rawTot = rows.reduce((t, r) => t + r.raw, 0), won = rows.filter(r => r.net > 0).length, lost = rows.filter(r => r.net < 0).length;
       const anyMiss = rows.some(r => r.inn.concat(r.out).some(a => a.miss));
       const al = a => a.length ? a.slice().sort((p, q) => q.v - p.v).map(y => `${esc(y.label)} <span class="muted">${y.miss ? 'n/r' : y.v.toLocaleString()}</span>`).join('<br>') : '<span class="muted">—</span>';
@@ -816,7 +877,7 @@ function demoApi(path){
   if (/^\/league\/[^/]+$/.test(path)) return lg(old);
   if (/\/leagues\/nfl\//.test(path)) return [lg(false)];
   if (/\/users$/.test(path)) return c.ids.map(i => ({ user_id: 'u' + i, display_name: 'manager' + i, is_owner: i === 1, metadata: { team_name: c.names[i - 1] } }));
-  if (/\/rosters$/.test(path)) return c.ids.map(i => ({ roster_id: i, owner_id: 'u' + i, taxi: [], settings: { waiver_budget_used: (i * 13) % 60 } }));
+  if (/\/rosters$/.test(path)) return c.ids.map(i => ({ roster_id: i, owner_id: 'u' + i, taxi: [], players: Array.from({ length: 12 }, (_, k) => 'p' + i + '_' + k), settings: { waiver_budget_used: (i * 13) % 60 } }));
   if (/\/traded_picks$/.test(path)) return [{ season: '2027', round: 1, roster_id: 2, previous_owner_id: 2, owner_id: 1 }];
   if ((m = path.match(/\/transactions\/(\d+)$/))) return +m[1] !== 4 ? [] : [
     { type: 'trade', status: 'complete', leg: 4, roster_ids: [1, 2], adds: { p1_0: 2, p2_1: 1 }, drops: { p1_0: 1, p2_1: 2 }, draft_picks: [{ season: '2027', round: 1, roster_id: 2, previous_owner_id: 2, owner_id: 1 }], waiver_budget: [{ sender: 1, receiver: 2, amount: 10 }], status_updated: 2 },
