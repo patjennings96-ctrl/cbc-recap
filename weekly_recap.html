@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Recap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1015; --card:#161b23; --card2:#1c232d; --line:#283140;
+  --ink:#eaeef4; --muted:#8a95a6; --accent:#c8f560; --money:#ffd166;
+  --win:#4ade80; --loss:#f87171; --cool:#60a5fa;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding:20px 16px 60px}
+h1,h2,.big,.num{font-family:"Barlow Condensed",Impact,"Arial Narrow",sans-serif;letter-spacing:.02em}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.bar select,.bar button{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit}
+.bar button{cursor:pointer}.bar button:hover{border-color:var(--accent)}
+.bar .sp{flex:1}
+header.hero{border-bottom:3px solid var(--accent);padding-bottom:14px;margin-bottom:22px}
+.hero .kicker{color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:12px}
+.hero h1{font-size:clamp(44px,9vw,84px);line-height:.92;margin:4px 0 6px;text-transform:uppercase;font-weight:800}
+.hero .headline{font-size:clamp(17px,2.6vw,22px);font-weight:600;margin:8px 0 6px;max-width:820px}
+.hero .sub{color:var(--muted)}
+section{margin-top:30px}
+h2{font-size:26px;text-transform:uppercase;margin:0 0 4px;font-weight:700}
+h2 small{font:500 12px Inter,sans-serif;color:var(--muted);text-transform:none;letter-spacing:0;margin-left:8px}
+.note{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.muted{color:var(--muted)} .win{color:var(--win)} .loss{color:var(--loss)} .acc{color:var(--accent)} .gold{color:var(--money)}
+.av{width:28px;height:28px;border-radius:50%;background:var(--card2);object-fit:cover;flex:none}
+.team{display:flex;align-items:center;gap:8px;min-width:0}
+.team b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.team span.o{display:block;color:var(--muted);font-size:11.5px}
+.ed{border-bottom:1px dashed transparent;outline:0;border-radius:3px}
+.ed:hover{border-bottom-color:var(--muted)} .ed:focus{background:var(--card2);border-bottom-color:var(--accent)}
+.money{background:linear-gradient(135deg,#2a2410,#161b23 60%);border-color:#5b4a14;display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center}
+.lab{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.money .big{font-size:40px;font-weight:800;line-height:1}
+.money .mid{text-align:center}.money .mid .big{color:var(--money);font-size:54px}
+.money .r{text-align:right}.money .r .team{justify-content:flex-end}
+@media(max-width:620px){.money{grid-template-columns:1fr}.money .r,.money .mid{text-align:left}.money .r .team{justify-content:flex-start}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px}
+.mu{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+.mu .num{font-size:26px;font-weight:700}
+.mu .lose{opacity:.55}
+.quip{font-size:12.5px;color:var(--muted);margin-top:8px;font-style:italic}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:5px;background:var(--card2);color:var(--muted);margin:0 4px 6px 0}
+.tag.hot{background:#3b1d1d;color:#fca5a5}.tag.acc{background:#2a3511;color:var(--accent)}.tag.gold{background:#3a2f0d;color:var(--money)}.tag.cool{background:#152a44;color:#93c5fd}
+.award .lab{color:var(--accent);font-weight:700}
+.award .v{font-size:16px;font-weight:600;margin:3px 0}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap}
+.tbl td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .r{text-align:right}.tbl .c{text-align:center}
+.tbl .num{font-size:18px;font-weight:700}
+.scroll{overflow-x:auto}
+.pbar{height:8px;border-radius:4px;background:var(--card2);min-width:90px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.spark{display:block}
+.mx td,.mx th{text-align:center;padding:6px 5px;font-variant-numeric:tabular-nums}
+.mx td.t{text-align:left;white-space:nowrap;font-weight:600}
+.mx td.self{outline:2px solid var(--accent);outline-offset:-2px;font-weight:700}
+.mx td.up{background:rgba(74,222,128,.16)} .mx td.dn{background:rgba(248,113,113,.16)}
+.prev .row{display:grid;grid-template-columns:1fr 64px;gap:8px;align-items:center;margin:6px 0}
+.prev .pct{font-family:"Barlow Condensed",sans-serif;font-size:24px;font-weight:700;text-align:right}
+.prev .split{height:6px;border-radius:3px;background:var(--cool);overflow:hidden;margin:8px 0}
+.prev .split i{display:block;height:100%;background:var(--accent)}
+.prev .sw{font-size:12px;color:var(--muted)}
+.prev .hist{font-size:12px;color:var(--muted);border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
+.trade .side{margin-top:8px}.trade .side b{font-weight:600}
+details{margin-top:12px} summary{cursor:pointer;color:var(--muted);font-size:13px}
+ul.plain{list-style:none;margin:0;padding:0} ul.plain li{padding:6px 0;border-bottom:1px solid var(--line)} ul.plain li:last-child{border:0}
+#status{padding:40px 0;text-align:center;color:var(--muted)}
+#status button{margin-top:12px;background:var(--accent);color:#111;border:0;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer}
+footer{margin-top:40px;color:var(--muted);font-size:12px;text-align:center}
+@media print{.bar{display:none}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <select id="leagueSel" title="League"></select>
+    <select id="weekSel" title="Recap week"></select>
+    <span class="sp"></span>
+    <button id="copyBtn">Copy text recap</button>
+    <button id="reBtn">Refresh</button>
+  </div>
+  <div id="status">Loading from Sleeper…</div>
+  <div id="app"></div>
+  <footer>Data: Sleeper public API · Odds are simulations, not promises · Dashed-underlined text is editable and saved in this browser.</footer>
+</div>
+
+<script>
+/* ============ SETTINGS — edit these ============ */
+const CONFIG = {
+  username: 'pjennings',
+  leagueId: '1312079813514661888', // The Cuckboys Championship (2026). Sleeper issues a new ID each season — update it here next year.
+  stake: 5,               // weekly high-score payout, paid by the low score
+  sims: 10000,            // playoff simulations
+  shrinkWeeks: 3,         // how strongly early-season averages are pulled toward league average
+  medianTracker: 'dabears544',  // manager (Sleeper username or team name) to track against the median all season
+  tradeTracker: 'evanmoon2',    // manager whose trades get a KeepTradeCut value ledger
+  show: {                 // set any of these to false to remove that section
+    headline: true,       // auto-written headline under the title
+    money: true,          // the $5
+    scoreboard: true,
+    roasts: true,         // one-liner under each result
+    awards: true,
+    medianWatch: true,
+    reportCard: true,     // points left on the bench
+    powerRankings: true,
+    trophyCase: true,     // season-long tallies
+    scheduleLuck: true,
+    playoffOdds: true,
+    titleOdds: true,      // finals / championship columns in the odds table
+    draftRace: true,      // race for the 1.01 + pick ownership
+    moves: false,         // trades & waivers
+    preview: true,
+    rivalry: true,        // all-time head-to-head line in the preview
+    recordBook: false,
+    medianTracker: true,  // one manager's season against the median
+    tradeValue: true      // one manager's trade ledger in KeepTradeCut value
+  }
+};
+/* =============================================== */
+
+/* KeepTradeCut dynasty values — a snapshot, because KeepTradeCut can't be read live from a standalone page.
+   Format: "Name|value;Name|value". Replace `raw` (and `asOf`) to refresh. */
+const KTC = { asOf: 'October 6, 2026', format: 'Superflex, TE premium (TE+)',
+  raw: "Jahmyr Gibbs|9998;Bijan Robinson|9996;Jaxon Smith-Njigba|9994;Josh Allen|9990;Ja'Marr Chase|9008;Brock Bowers|9055;Amon-Ra St. Brown|7990;Puka Nacua|7759;Caleb Williams|7573;Lamar Jackson|7541;Trey McBride|8279;CeeDee Lamb|7463;Ashton Jeanty|7430;Kenneth Walker III|7360;Justin Jefferson|7213;Jeremiyah Love|7210;2027 Early 1st|6985;Brock Purdy|6902;Joe Burrow|6898;Jonathan Taylor|6786;Chris Olave|6783;Drake London|6778;Malik Nabers|6736;Trevor Lawrence|6693;James Cook|6594;Patrick Mahomes|6576;Drake Maye|6496;Zay Flowers|6360;Tetairoa McMillan|6229;Garrett Wilson|6189;Tyler Shough|5989;Jayden Daniels|5984;George Pickens|5927;Parker Washington|5925;Nico Collins|5903;2027 Mid 1st|5894;Jalen Hurts|5832;Tyler Warren|6424;Chase Brown|5756;Christian McCaffrey|5630;DeVonta Smith|5628;Jaxson Dart|5613;Omarion Hampton|5610;De'Von Achane|5567;Bryce Young|5558;2028 Early 1st|5543;Breece Hall|5442;Dak Prescott|5416;Bo Nix|5392;Emeka Egbuka|5337;Kyren Williams|5320;Colston Loveland|5920;Luther Burden|5292;Fernando Mendoza|5272;Justin Herbert|5254;Ladd McConkey|5212;Christian Watson|5180;Tee Higgins|5143;Carnell Tate|5127;Derrick Henry|5067;2027 Late 1st|5030;Javonte Williams|4966;Matthew Golden|4960;Jordan Love|4931;Quinshon Judkins|4924;Bucky Irving|4847;Jordyn Tyson|4837;Denzel Boston|4831;Bhayshul Tuten|4747;Harold Fannin|5299;Cam Skattebo|4736;Saquon Barkley|4722;Kenyon Sadiq|5275;2028 Mid 1st|4691;Jared Goff|4642;TreVeyon Henderson|4628;Tucker Kraft|5156;Rashee Rice|4600;2029 Early 1st|4594;Jalen Coker|4593;Jaylen Waddle|4587;D'Andre Swift|4559;Jadarian Price|4532;KC Concepcion|4423;A.J. Brown|4416;Sam LaPorta|4945;C.J. Stroud|4334;Sam Darnold|4314;Michael Wilson|4314;Dalton Kincaid|4830;Rome Odunze|4272;2028 Late 1st|4228;Jameson Williams|4219;Makai Lemon|4175;Chuba Hubbard|4100;2029 Mid 1st|4042;Davante Adams|3923;2027 Early 2nd|3846;Isaiah Likely|4305;2029 Late 1st|3790;Josh Downs|3784;George Kittle|4214;Jordan Addison|3710;Kyle Monangai|3707;D.J. Moore|3703;Jaylen Warren|3660;Baker Mayfield|3592;Michael Penix Jr.|3583;Matthew Stafford|3578;2027 Mid 2nd|3557;Blake Corum|3555;Cam Ward|3545;De'Zhaun Stribling|3512;Travis Etienne|3507;Ty Simpson|3469;Daniel Jones|3445;Alec Pierce|3425;Jonah Coleman|3414;Kyler Murray|3411;Brian Thomas Jr.|3378;Marvin Harrison Jr.|3367;Zach Charbonnet|3322;RJ Harvey|3307;David Montgomery|3298;2028 Early 2nd|3287;Mike Evans|3278;Omar Cooper Jr.|3259;Kyle Pitts|3696;Antonio Williams|3218;Terrance Ferguson|3653;Malik Willis|3207;2027 Late 2nd|3202;Terry McLaurin|3197;DK Metcalf|3184;Chris Bell|3181;Kaelon Black|3162;Emmett Johnson|3157;Xavier Worthy|3142;Caleb Douglas|3139;Braelon Allen|3138;Jake Ferguson|3568;2028 Mid 2nd|3129;Adonai Mitchell|3121;Jacory Croskey-Merritt|3088;Juwan Johnson|3510;Ja'Kobi Lane|3068;Dontayvion Wicks|3065;Rhamondre Stevenson|3045;Ollie Gordon II|3038;2029 Early 2nd|3034;Mike Washington Jr.|3021;Jayden Higgins|3013;Malachi Fields|3011;Pat Bryant|2980;2028 Late 2nd|2978;Josh Jacobs|2964;Travis Kelce|3374;Wan'Dale Robinson|2925;Woody Marks|2913;Oronde Gadsden|3278;Deebo Samuel|2849;Jakobi Meyers|2848;Khalil Shakir|2835;Ted Hurst|2832;Brenton Strange|3246;Stefon Diggs|2828;Tre Tucker|2810;2029 Mid 2nd|2801;Devaughn Vele|2794;Keaton Mitchell|2770;Malik Washington|2767;Romeo Doubs|2750;Jordan Mason|2745;Jayden Reed|2745;J.K. Dobbins|2744;Quentin Johnston|2739;Jonathon Brooks|2716;Tony Pollard|2707;Eli Stowers|3115;Germie Bernard|2704;Aaron Jones|2693;Keon Coleman|2693;Tre Harris|2679;2029 Late 2nd|2669;Roman Wilson|2667;Deshaun Watson|2650;Dallas Goedert|3057;2027 Early 3rd|2646;Kirk Cousins|2635;Jacoby Brissett|2631;AJ Barner|3033;Courtland Sutton|2624;Michael Pittman|2618;Rico Dowdle|2612;Tyler Allgeier|2612;T.J. Hockenson|3012;Ricky Pearsall|2603;Tank Bigsby|2590;Mark Andrews|2985;Michael Mayer|2984;Nicholas Singleton|2570;Chris Godwin|2567;Dalton Schultz|2970;2027 Mid 3rd|2561;Rachaad White|2556;Carson Beck|2538;Jaylen Wright|2536;Geno Smith|2523;Brian Robinson|2523;Kayshon Boutte|2515;Eli Raridon|2913;Kenneth Gainwell|2501;Isaac TeSlaa|2499;Rashod Bateman|2478;Jaylin Noel|2473;Pat Freiermuth|2873;2028 Early 3rd|2467;Dylan Sampson|2461;Zachariah Branch|2461;2027 Late 3rd|2449;Rashid Shaheed|2447;Jalen McMillan|2447;Mac Jones|2409;Tyjae Spears|2407;Kendre Miller|2398;2028 Mid 3rd|2381;J.J. McCarthy|2373;Drew Allar|2368;Shedeur Sanders|2319;Cyrus Allen|2306;Chris Rodriguez|2282;Elic Ayomanor|2229;Tank Dell|2209;2029 Early 3rd|2199;Jack Bech|2197;Jalon Daniels|2189;Hunter Henry|2572;Travis Hunter|2183;Chigoziem Okonkwo|2558;Troy Franklin|2164;Kaleb Johnson|2162;Elijah Sarratt|2161;Tory Horton|2160;MarShawn Lloyd|2157;Kaytron Allen|2152;2028 Late 3rd|2146;Gunnar Helm|2531;Alvin Kamara|2139;Kevin Coleman|2118;Xavier Hutchinson|2112;Demond Claiborne|2111;Chris Brazzell II|2103;Darnell Washington|2489;2029 Mid 3rd|2101;Drew Lock|2099;Marcus Mariota|2098;Cade Otton|2486;Emanuel Wilson|2087;Jalen Nailor|2071;Ryan Flournoy|2071;Skyler Bell|2049;Kyle Williams|2045;Mason Taylor|2416;Elijah Arroyo|2413;Demario Douglas|2024;Aaron Rodgers|2022;Raheim Sanders|2018;2027 Early 4th|2002;Max Klare|2387;Tyson Bagent|2001;Tyquan Thornton|2000;Jaylin Lane|1994;Kimani Vidal|1982;Jalen Milroe|1975;Zavion Thomas|1973;Cole Kmet|2355;Mike Gesicki|2352;Tez Johnson|1955;2029 Late 3rd|1955;Darren Waller|2325;Cade Klubnik|1935;Chimere Dike|1930;Colby Parkinson|2306;Greg Dulcich|2301;Sean Tucker|1917;Bryce Lance|1915;George Holani|1911;2027 Mid 4th|1910;Dawson Knox|2288;Jerry Jeudy|1899;Isaiah Davis|1885;Adam Randall|1883;Seth McGowan|1878;Evan Engram|2262;Oscar Delp|2261;Jauan Jennings|1855;Jordan James|1846;Marvin Mims|1844;2028 Early 4th|1840;2027 Late 4th|1839;Xavier Legette|1836;Joshua Palmer|1833;Jalen Royals|1813;Trevor Etienne|1812;Kalif Raymond|1800;Ray Davis|1799;Jameis Winston|1797;Anthony Richardson|1796;Will Shipley|1785;LeQuint Allen|1784;Cooper Kupp|1753;Tua Tagovailoa|1741;Theo Johnson|2120;Isaiah Bond|1737;Konata Mumpfield|1736;Mack Hollins|1718;David Njoku|2094;Keenan Allen|1710;Tyrone Tracy|1683;Brashard Smith|1671;Will Howard|1668;Brenen Thompson|1661;Eli Heidenreich|1654;Carson Wentz|1650;Barion Brown|1629;Darnell Mooney|1628;DJ Giddens|1621;Justice Hill|1616;2028 Mid 4th|1613;Dont'e Thornton|1608;Isiah Pacheco|1594;Noah Fant|1964;2029 Early 4th|1585;Kendrick Bourne|1582;Jake Tonges|1943;Jahan Dotson|1556;Chris Brooks|1556;Trey Benson|1556;Malik Benson|1541;Malik Davis|1526;Josh Cameron|1515;Taylen Green|1509;Tyler Higbee|1879;Justin Fields|1493;Devontez Walker|1488;2028 Late 4th|1481;Christian Kirk|1475;Najee Harris|1468;Ja'Tavion Sanders|1838;Sione Vaki|1461;Matthew Hibner|1819;Noah Gray|1813;Treylon Burks|1439;Joe Mixon|1426;Devin Singletary|1425;2029 Mid 4th|1408;Joe Milton|1396;Roschon Johnson|1387;Ben Sinnott|1746;Andrei Iosivas|1375;Luke Musgrave|1742;Jahdae Walker|1374;Justin Joly|1742;John Metchie|1367;Garrett Nussmeier|1364;Savion Williams|1344;Jordan Whittington|1338;Deion Burks|1326;Quinn Ewers|1314;Riley Leonard|1311;Jordan Watkins|1311;Colbie Young|1305;Emari Demercado|1303;Tutu Atwell|1295;Charlie Kolar|1662;Jalen Tolbert|1294;Tahj Brooks|1291;Jarquez Hunter|1286;Ty Johnson|1273;Luke McCaffrey|1272;Marlin Klein|1640;2029 Late 4th|1265;Tommy Tremble|1629;Jack Strand|1259;Erick All|1615;Dyami Brown|1246;Skyy Moore|1245;Kameron Johnson|1243;Jaydon Blue|1237;Cedric Tillman|1227;Jacob Cowing|1224;Zach Ertz|1587;Trey Palmer|1218;James Conner|1208;Jacob Saylors|1197;Tyreek Hill|1195;Olamide Zaccheaus|1189;Tai Felton|1189;Samaje Perine|1184;Jaleel McLaughlin|1175;KeAndre Lambert-Smith|1171;Cade Stover|1537;Jack Endries|1536;Sam Roush|1524;Calvin Ridley|1144;Dillon Gabriel|1142;Daniel Bellinger|1509;J'Mari Taylor|1139;Spencer Rattler|1136;Malachi Corley|1128;Tyler Huntley|1124;Mitchell Evans|1489;Rasheen Ali|1112;Jimmy Horn|1111;Devin Neal|1106;CJ Daniels|1106;Audric Estime|1105;Demarcus Robinson|1092;Isaac Guerendo|1086;Tyler Badie|1076;Greg Dortch|1073;Cody White|1068;Marquise Brown|1063;Jonnu Smith|1419;Jonathan Mingo|1050;Davis Mills|1048;Efton Chism|1042;Calvin Austin III|1040;Michael Trigg|1399;Tyler Goodson|1013;KaVontae Turpin|1001;Elijah Moore|994;Darius Slayton|988;Tanner Koziol|1350;Jalin Hyatt|973;Will Kacmarek|1331;Austin Ekeler|956;AJ Dillon|952;Elijah Higgins|1311;Gabriel Davis|929;Javon Baker|911;Davis Allen|1254;David Bell|892;Luke Schoonmaker|1234;Xavier Restrepo|873;Tanner McKee|870;Kalel Mullings|869;Frank Gore Jr.|843;Bam Knight|841;Trey Lance|811;Dameon Pierce|805;Stetson Bennett|799;Sam Howell|797;Case Keenum|796;Kendall Milton|794;Mason Tipton|793;Khalil Herbert|789;Bo Melton|789;Kyle McCord|783;Jerome Ford|782;Dohnte Meyers|773;Brock Wright|1130;Israel Abanikanda|771;Brevin Jordan|1128;Arian Smith|767;Jared Wiley|1126;Gardner Minshew|763;Le'Veon Moss|763;Xavier Gipson|742;Phil Mafah|740;Nick Westbrook-Ikhine|734;Michael Carter|728;Reggie Virgil|689;Kenny Pickett|685;Joe Flacco|623;Jeremy Ruckert|960;Foster Moreau|960;Isaiah Hodgins|597;Lil'Jordan Humphrey|534;Will Levis|528;Jake Bobo|522;Dylan Laube|511;LaJohntay Wester|511;Derius Davis|489;Tyler Johnson|484;Tyrell Shavers|479;Julius Chestnut|475;Tyler Scott|475;Cole Payton|475;Zavier Scott|473;Brandin Cooks|471;Zamir White|470;Travis Homer|467;Sincere McCormick|466;Johnny Wilson|465;Elijah Mitchell|460;Brenden Rice|460;Thomas Fidone|802;Devin Duvernay|455;Damien Martinez|455" };
+const ktcNorm = s => String(s).toLowerCase().replace(/[.'\u2019]/g, '').replace(/\s+(jr|sr|ii|iii|iv)$/, '').replace(/[^a-z0-9]/g, '');
+const KTCV = {}; KTC.raw.split(';').forEach(e => { const i = e.lastIndexOf('|'); KTCV[ktcNorm(e.slice(0, i))] = +e.slice(i + 1); });
+
+const BASE = 'https://api.sleeper.app/v1';
+const qs = new URLSearchParams(location.search);
+let DEMO = qs.has('demo');
+const SHOW = CONFIG.show;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f1 = n => (Math.round(n * 10) / 10).toFixed(1);
+const f2 = n => (Math.round(n * 100) / 100).toFixed(2);
+const pct = p => p >= .995 ? '>99%' : p > 0 && p < .005 ? '<1%' : Math.round(p * 100) + '%';
+const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+const ord = n => n + (['th','st','nd','rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] || 'th');
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }, del(k){ try { localStorage.removeItem(k); } catch(e){} } };
+
+async function api(path){
+  if (DEMO) return demoApi(path);
+  const r = await fetch(BASE + path);
+  if (!r.ok) throw new Error('Sleeper returned ' + r.status + ' for ' + path);
+  return r.json();
+}
+
+let G = { state:null, leagues:[], usersBy:{}, D:null, players:null, hist:{}, simCache:{}, curW:null, text:() => '' };
+
+/* ---------------- load ---------------- */
+async function init(){
+  $('app').innerHTML = ''; $('status').style.display = ''; $('status').textContent = 'Loading from Sleeper…'; G.simCache = {};
+  try {
+    G.state = await api('/state/nfl');
+    const season = G.state.league_season || G.state.season;
+    const forced = qs.get('league') || CONFIG.leagueId;
+    if (forced) {
+      G.leagues = [await api('/league/' + forced)];
+    } else {
+      const user = await api('/user/' + encodeURIComponent(qs.get('user') || CONFIG.username));
+      if (!user || !user.user_id) throw new Error('Sleeper user "' + CONFIG.username + '" not found');
+      G.me = user.user_id;
+      G.leagues = await api(`/user/${user.user_id}/leagues/nfl/${season}`) || [];
+    }
+    if (!G.leagues.length || !G.leagues[0]) throw new Error('No leagues found for ' + season);
+    await Promise.all(G.leagues.map(async l => { G.usersBy[l.league_id] = await api(`/league/${l.league_id}/users`); }));
+    const isComm = l => (G.usersBy[l.league_id] || []).some(u => u.user_id === G.me && u.is_owner);
+    $('leagueSel').innerHTML = G.leagues.map(l => `<option value="${esc(l.league_id)}">${isComm(l) ? '★ ' : ''}${esc(l.name)}</option>`).join('');
+    $('leagueSel').style.display = G.leagues.length > 1 ? '' : 'none';
+    const saved = store.get('recap_league');
+    const pick = G.leagues.find(l => l.league_id === saved) || G.leagues.find(isComm) || G.leagues[0];
+    $('leagueSel').value = pick.league_id;
+    await loadLeague(pick.league_id);
+    loadPlayers();
+  } catch (e) { fail(e); }
+}
+
+function fail(e){
+  console.error(e);
+  $('status').style.display = '';
+  $('status').innerHTML = `Couldn't load from Sleeper: ${esc(e.message)}<br><span class="muted">Open this file directly in your browser (double-click it) with an internet connection.</span><br><button id="demoBtn">Show with sample data</button>`;
+  $('demoBtn').onclick = () => { DEMO = true; init(); };
+}
+
+async function loadLeague(id){
+  $('status').style.display = ''; $('status').textContent = 'Loading league…'; $('app').innerHTML = ''; G.curW = null;
+  const league = G.leagues.find(l => l.league_id === id);
+  const s = league.settings || {};
+  const start = s.start_week || 1, regEnd = (s.playoff_week_start || 15) - 1;
+  const weeks = []; for (let w = start; w <= regEnd; w++) weeks.push(w);
+  const txWeeks = []; for (let w = 1; w <= Math.min(18, Math.max(G.state.week || 1, 1) + 1); w++) txWeeks.push(w);
+  const soft = p => api(p).catch(() => []);
+  const did = league.draft_id;
+  const [rosters, picks, draft, dpicks, mus, txs] = await Promise.all([
+    api(`/league/${id}/rosters`), soft(`/league/${id}/traded_picks`),
+    did ? soft('/draft/' + did) : [], did ? soft(`/draft/${did}/picks`) : [],
+    Promise.all(weeks.map(w => soft(`/league/${id}/matchups/${w}`))),
+    Promise.all(txWeeks.map(w => soft(`/league/${id}/transactions/${w}`)))
+  ]);
+  const users = Object.fromEntries((G.usersBy[id] || []).map(u => [u.user_id, u]));
+  const teams = rosters.map(r => {
+    const u = users[r.owner_id] || {};
+    return { rid: r.roster_id, oid: r.owner_id || 'r' + r.roster_id, owner: u.display_name || 'Team ' + r.roster_id,
+      name: (u.metadata && u.metadata.team_name) || u.display_name || 'Team ' + r.roster_id,
+      avatar: u.avatar ? `https://sleepercdn.com/avatars/thumbs/${u.avatar}` : '',
+      div: (r.settings && r.settings.division) || 0,
+      faabUsed: (r.settings && r.settings.waiver_budget_used) || 0,
+      ppts: r.settings && r.settings.ppts ? r.settings.ppts + (r.settings.ppts_decimal || 0) / 100 : 0,
+      fpts: r.settings && r.settings.fpts ? r.settings.fpts + (r.settings.fpts_decimal || 0) / 100 : 0, taxi: new Set(r.taxi || []) };
+  });
+  const scores = {}, pairs = {}, raw = {}, ptsW = {};
+  weeks.forEach((w, i) => {
+    const list = mus[i] || []; raw[w] = {}; scores[w] = {}; ptsW[w] = {}; const by = {};
+    list.forEach(m => {
+      raw[w][m.roster_id] = m; scores[w][m.roster_id] = +m.points || 0;
+      Object.assign(ptsW[w], m.players_points || {});
+      if (m.matchup_id != null) (by[m.matchup_id] = by[m.matchup_id] || []).push(m.roster_id);
+    });
+    pairs[w] = Object.values(by).filter(p => p.length === 2);
+  });
+  const hasPts = w => Object.values(scores[w] || {}).some(p => p > 0);
+  let last = Math.min(s.last_scored_leg != null ? s.last_scored_leg : (G.state.week || 1) - 1, regEnd);
+  while (last >= start && !hasPts(last)) last--;
+  const txns = [].concat(...txs.map(x => x || [])).filter(t => t && t.status === 'complete').sort((a, b) => (b.status_updated || b.created || 0) - (a.status_updated || a.created || 0));
+  const dr = { slotOf: {}, pick: {} };
+  Object.entries((draft && draft.slot_to_roster_id) || {}).forEach(([sl, r]) => dr.slotOf[r] = +sl);
+  (Array.isArray(dpicks) ? dpicks : []).forEach(p => dr.pick[p.round + '-' + p.draft_slot] = p.player_id);
+  G.D = { draft: dr, league, teams, T: Object.fromEntries(teams.map(t => [t.rid, t])), scores, pairs, raw, ptsW, txns, picks: picks || [], start, regEnd, last,
+    median: !!s.league_average_match, divisions: s.divisions || 0, playoffTeams: s.playoff_teams || 6,
+    slots: (league.roster_positions || []).filter(p => ELIG[p]).map(p => ELIG[p]).sort((a, b) => a.length - b.length) };
+  if (last < start) { $('status').textContent = 'No completed weeks yet for ' + league.name + ' — check back after Week ' + start + '.'; $('weekSel').innerHTML = ''; return; }
+  const opts = []; for (let w = last; w >= start; w--) opts.push(`<option value="${w}">Week ${w}</option>`);
+  $('weekSel').innerHTML = opts.join(''); $('weekSel').value = last;
+  render(last);
+  loadHistory(league);
+}
+
+async function loadPlayers(){
+  if (G.players) return;
+  try {
+    const c = JSON.parse(store.get('recap_players') || 'null');
+    if (c && Date.now() - c.t < 7 * 864e5) { G.players = c.p; rerender(); return; }
+  } catch(e){}
+  try {
+    const all = await api('/players/nfl'); const p = {};
+    for (const id in all) { const x = all[id]; p[id] = [x.full_name || ((x.first_name || '') + ' ' + (x.last_name || '')).trim() || id, x.position || '', x.team || '']; }
+    G.players = p; store.set('recap_players', JSON.stringify({ t: Date.now(), p })); rerender();
+  } catch(e){ console.warn('player names unavailable', e); }
+}
+
+/* Walks back through previous seasons of this league (they never change, so they're cached in this browser). */
+async function loadHistory(league){
+  const id = league.league_id, key = 'recap_hist_v1_' + id;
+  if (G.hist[id]) return;
+  try { const c = JSON.parse(store.get(key) || 'null'); if (c && !DEMO) { G.hist[id] = c; rerender(); return; } } catch(e){}
+  try {
+    const seasons = []; let pid = league.previous_league_id, n = 0;
+    while (pid && pid !== '0' && n++ < 10) {
+      const L = await api('/league/' + pid); if (!L) break;
+      const st = L.settings || {}, a = st.start_week || 1, b = (st.playoff_week_start || 15) - 1, wk = [];
+      for (let w = a; w <= b; w++) wk.push(w);
+      const [users, rosters, mus] = await Promise.all([api(`/league/${pid}/users`), api(`/league/${pid}/rosters`), Promise.all(wk.map(w => api(`/league/${pid}/matchups/${w}`).catch(() => [])))]);
+      const own = {}, names = {}; (rosters || []).forEach(r => own[r.roster_id] = r.owner_id || 'r' + r.roster_id);
+      (users || []).forEach(u => names[u.user_id] = (u.metadata && u.metadata.team_name) || u.display_name);
+      const games = [];
+      wk.forEach((w, i) => { const by = {}; (mus[i] || []).forEach(m => { if (m.matchup_id != null) (by[m.matchup_id] = by[m.matchup_id] || []).push(m); });
+        Object.values(by).forEach(p => { if (p.length === 2 && ((+p[0].points || 0) > 0 || (+p[1].points || 0) > 0)) games.push([w, own[p[0].roster_id], +p[0].points || 0, own[p[1].roster_id], +p[1].points || 0]); }); });
+      seasons.push({ season: L.season, names, games });
+      pid = L.previous_league_id;
+    }
+    G.hist[id] = seasons; if (!DEMO) store.set(key, JSON.stringify(seasons)); rerender();
+  } catch(e){ console.warn('league history unavailable', e); }
+}
+function rerender(){ if (G.D && G.curW != null) render(G.curW); }
+function pname(id){ const p = G.players && G.players[id]; return p ? `${p[0]}${p[1] && p[1] !== 'DEF' ? ' · ' + p[1] : ''}${p[2] ? ' ' + p[2] : ''}` : 'Player ' + id; }
+const pshort = id => { const p = G.players && G.players[id]; return p ? p[0] : 'Player ' + id; };
+
+/* ---------------- numbers ---------------- */
+const ELIG = { QB:['QB'], RB:['RB'], WR:['WR'], TE:['TE'], K:['K'], DEF:['DEF'], DL:['DL'], LB:['LB'], DB:['DB'],
+  FLEX:['RB','WR','TE'], WRRB_FLEX:['RB','WR'], REC_FLEX:['WR','TE'], SUPER_FLEX:['QB','RB','WR','TE'], IDP_FLEX:['DL','LB','DB'] };
+function median(a){ const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+
+function stats(W){
+  const D = G.D, S = {};
+  D.teams.forEach(t => S[t.rid] = { rid: t.rid, w:0, l:0, t:0, pf:0, pa:0, g:0, wk:[], apW:0, apL:0, expW:0, h2hW:0, h2hG:0, medW:0, medL:0, hiW:0, loW:0, lucky:0, tough:0, blow:0, heart:0 });
+  for (let w = D.start; w <= W; w++) {
+    const sc = D.scores[w]; if (!sc) continue;
+    const rids = Object.keys(sc).filter(r => S[r]); if (!rids.some(r => sc[r] > 0)) continue;
+    const res = {}, opp = {};
+    D.pairs[w].forEach(([a, b]) => {
+      if (!S[a] || !S[b]) return;
+      const d = sc[a] - sc[b]; res[a] = d > 0 ? 'W' : d < 0 ? 'L' : 'T'; res[b] = d < 0 ? 'W' : d > 0 ? 'L' : 'T';
+      S[a].pa += sc[b]; S[b].pa += sc[a]; opp[a] = b; opp[b] = a;
+    });
+    const med = median(rids.map(r => sc[r]));
+    const srt = [...rids].sort((x, y) => sc[y] - sc[x]); S[srt[0]].hiW++; S[srt[srt.length - 1]].loW++;
+    rids.forEach(r => {
+      const s = S[r], p = sc[r], o = opp[r], mg = o != null ? p - sc[o] : 0; s.pf += p; s.g++;
+      if (res[r]) { s.h2hG++; if (res[r] === 'W') { s.w++; s.h2hW++; } else if (res[r] === 'L') s.l++; else { s.t++; s.h2hW += .5; } }
+      if (res[r] === 'W') { if (p < med) s.lucky++; if (mg > 40) s.blow++; }
+      if (res[r] === 'L') { if (p > med) s.tough++; if (-mg < 5) s.heart++; }
+      if (D.median) { if (p > med) { s.w++; s.medW++; } else { s.l++; s.medL++; } }
+      let beat = 0; rids.forEach(x => { if (x !== r) { if (p > sc[x]) { beat++; s.apW++; } else if (p < sc[x]) s.apL++; } });
+      if (rids.length > 1) s.expW += beat / (rids.length - 1);
+      s.wk.push({ w, pts: p, res: res[r] || '-', opp: o, oppPts: o != null ? sc[o] : null, med: p > med, medVal: med });
+    });
+  }
+  Object.values(S).forEach(s => {
+    s.avg = s.g ? s.pf / s.g : 0;
+    s.last3 = mean(s.wk.slice(-3).map(x => x.pts));
+    s.form = s.last3 - s.avg;
+    s.luck = s.h2hW - s.expW;
+    let n = 0, k = null; for (let i = s.wk.length - 1; i >= 0; i--) { const r = s.wk[i].res; if (r === '-') continue; if (k == null) k = r; if (r !== k) break; n++; }
+    s.streak = k ? k + n : '—';
+    s.winval = s.w + s.t / 2;
+  });
+  return S;
+}
+
+function seedOrder(list, D){
+  const s = [...list].sort((a, b) => b.wv - a.wv || b.pf - a.pf);
+  if (!D.divisions) return s;
+  const seen = {}, lead = [], rest = [];
+  s.forEach(x => { if (x.div && !seen[x.div]) { seen[x.div] = 1; lead.push(x); } else rest.push(x); });
+  return lead.concat(rest);
+}
+
+function power(W){
+  const S = stats(W), arr = Object.values(S).filter(s => s.g);
+  const z = k => { const v = arr.map(k), m = mean(v), sd = Math.sqrt(mean(v.map(x => (x - m) ** 2))) || 1; return x => (x - m) / sd; };
+  const ap = s => s.apW / Math.max(1, s.apW + s.apL);
+  const za = z(s => s.avg), zl = z(s => s.last3), zp = z(ap);
+  arr.forEach(s => s.pw = .5 * za(s.avg) + .3 * zl(s.last3) + .2 * zp(ap(s)));
+  arr.sort((a, b) => b.pw - a.pw).forEach((s, i) => s.rank = i + 1);
+  return S;
+}
+
+function gauss(){ let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function bracketOrder(size){ let a = [1]; while (a.length < size) { const n = a.length * 2 + 1, b = []; a.forEach(s => b.push(s, n - s)); a = b; } return a; }
+
+function simulate(W, S){
+  const D = G.D, ck = D.league.league_id + ':' + W; if (G.simCache[ck]) return G.simCache[ck];
+  const rids = D.teams.map(t => t.rid), n = rids.length, ix = Object.fromEntries(rids.map((r, i) => [r, i]));
+  const all = rids.flatMap(r => S[r].wk.map(x => x.pts)), lm = mean(all) || 100;
+  let ss = 0, df = 0; rids.forEach(r => { S[r].wk.forEach(x => ss += (x.pts - S[r].avg) ** 2); df += Math.max(0, S[r].wk.length - 1); });
+  const sd = Math.max(df > 0 ? Math.sqrt(ss / df) : 0, lm * .14), k = CONFIG.shrinkWeeks;
+  const mu = rids.map(r => (S[r].pf + k * lm) / (S[r].g + k)), muSd = rids.map(r => sd / Math.sqrt(S[r].g + k));
+  const weeks = []; for (let w = W + 1; w <= D.regEnd; w++) weeks.push((D.pairs[w] || []).filter(p => p[0] in ix && p[1] in ix).map(p => [ix[p[0]], ix[p[1]]]));
+  const PT = Math.min(D.playoffTeams, n), B = 2 ** Math.ceil(Math.log2(Math.max(PT, 2))), byes = B - PT, bo = bracketOrder(B);
+  const out = rids.map(() => ({ po:0, bye:0, wins:0, nW:0, poW:0, poL:0, nG:0, fin:0, champ:0, p1:0, top3:0 }));
+  // max points-for (potential points): Sleeper's season figure, projected forward at each team's own max/actual ratio
+  const ratio = rids.map(r => { const t = D.T[r]; return t.ppts && t.fpts ? Math.max(1, t.ppts / t.fpts) : 1.12; });
+  const mpBase = rids.map((r, i) => S[r].pf * ratio[i]), mp = new Float64Array(n);
+  const N = CONFIG.sims, base = rids.map(r => ({ wv: S[r].winval, pf: S[r].pf, div: D.T[r].div }));
+  const sc = new Float64Array(n), wv = new Float64Array(n), pf = new Float64Array(n), tm = new Float64Array(n), nx = new Int8Array(n);
+  for (let s = 0; s < N; s++) {
+    for (let i = 0; i < n; i++) { wv[i] = base[i].wv; pf[i] = base[i].pf; tm[i] = mu[i] + muSd[i] * gauss(); nx[i] = -1; mp[i] = mpBase[i]; }
+    for (let wi = 0; wi < weeks.length; wi++) {
+      for (let i = 0; i < n; i++) { sc[i] = tm[i] + sd * gauss(); pf[i] += sc[i]; mp[i] += sc[i] * ratio[i]; }
+      const ps = weeks[wi];
+      for (let j = 0; j < ps.length; j++) { const a = ps[j][0], b = ps[j][1], aw = sc[a] > sc[b]; wv[aw ? a : b]++; if (wi === 0) { nx[a] = aw ? 1 : 0; nx[b] = aw ? 0 : 1; } }
+      if (D.median && ps.length) { const m = median(Array.from(sc)); for (let i = 0; i < n; i++) if (sc[i] > m) wv[i]++; }
+    }
+    const o = seedOrder(base.map((b, i) => ({ i, wv: wv[i], pf: pf[i], div: b.div })), D);
+    const inPo = new Uint8Array(n);
+    o.forEach((x, pos) => { if (pos < PT) { inPo[x.i] = 1; out[x.i].po++; } if (pos < byes) out[x.i].bye++; });
+    // rookie draft: teams that miss the playoffs pick in order of lowest max points-for
+    const miss = []; for (let pos = PT; pos < n; pos++) miss.push(o[pos].i);
+    miss.sort((a, b) => mp[a] - mp[b]); if (miss.length) out[miss[0]].p1++; for (let q = 0; q < 3 && q < miss.length; q++) out[miss[q]].top3++;
+    for (let i = 0; i < n; i++) { out[i].wins += wv[i]; if (nx[i] >= 0) { out[i].nG++; if (nx[i]) { out[i].nW++; out[i].poW += inPo[i]; } else out[i].poL += inPo[i]; } }
+    // single-elimination bracket, one game per round, no re-seeding
+    let cur = bo.map(sd2 => sd2 <= PT ? o[sd2 - 1].i : -1);
+    while (cur.length > 1) { const nxt = [], fin = cur.length === 2;
+      for (let j = 0; j < cur.length; j += 2) { const a = cur[j], b = cur[j + 1];
+        if (a < 0) nxt.push(b); else if (b < 0) nxt.push(a);
+        else { if (fin) { out[a].fin++; out[b].fin++; } nxt.push(tm[a] + sd * gauss() >= tm[b] + sd * gauss() ? a : b); } }
+      cur = nxt; }
+    if (cur[0] >= 0) out[cur[0]].champ++;
+  }
+  const R = {};
+  rids.forEach((r, i) => { const o = out[i], nL = o.nG - o.nW;
+    R[r] = { po: o.po / N, bye: o.bye / N, wins: o.wins / N, fin: o.fin / N, champ: o.champ / N, p1: o.p1 / N, top3: o.top3 / N, maxpf: mpBase[i],
+      pWin: o.nG ? o.nW / o.nG : null, ifW: o.nW ? o.poW / o.nW : null, ifL: nL ? o.poL / nL : null };
+    R[r].lev = R[r].ifW != null && R[r].ifL != null ? R[r].ifW - R[r].ifL : 0; });
+  R._byes = byes;
+  return G.simCache[ck] = R;
+}
+
+/* Best possible lineup each week vs. the one actually set. */
+function coach(W){
+  const D = G.D; if (!G.players || !D.slots.length) return null;
+  const C = {}; D.teams.forEach(t => C[t.rid] = { rid: t.rid, left:0, opt:0, act:0, cost:0, wk:{} });
+  const pos = id => (G.players[id] || [])[1] || (/^[A-Z]{2,3}$/.test(id) ? 'DEF' : '');
+  for (let w = D.start; w <= W; w++) {
+    Object.values(D.raw[w] || {}).forEach(m => { const c = C[m.roster_id]; if (!c || !(m.points > 0)) return;
+      const pp = m.players_points || {}, st = new Set(m.starters || []), taxi = D.T[m.roster_id].taxi;
+      const pool = (m.players || Object.keys(pp)).filter(id => st.has(id) || !taxi.has(id)).map(id => ({ id, p: +pp[id] || 0, pos: pos(id) })).sort((a, b) => b.p - a.p);
+      const used = new Set(); let opt = 0;
+      D.slots.forEach(el => { const x = pool.find(q => !used.has(q.id) && el.includes(q.pos)); if (x && x.p > 0) { used.add(x.id); opt += x.p; } });
+      let act = 0; st.forEach(id => act += +pp[id] || 0); opt = Math.max(opt, act);
+      const o = (D.pairs[w].find(p => p.includes(m.roster_id)) || []).find(r => r !== m.roster_id), os = o != null ? D.scores[w][o] : null;
+      c.wk[w] = { opt, act, left: opt - act }; c.left += opt - act; c.opt += opt; c.act += act;
+      if (os != null && act < os && opt > os) c.cost++;
+    });
+  }
+  return C;
+}
+
+function schedLuck(W){
+  const D = G.D, rids = D.teams.map(t => t.rid), M = {}; rids.forEach(i => { M[i] = {}; rids.forEach(j => M[i][j] = 0); });
+  for (let w = D.start; w <= W; w++) { const sc = D.scores[w], opp = {}; D.pairs[w].forEach(([a, b]) => { opp[a] = b; opp[b] = a; });
+    rids.forEach(i => rids.forEach(j => { let o = opp[j]; if (o == null || sc[i] == null) return; if (o == i) o = j; if (sc[o] == null) return; M[i][j] += sc[i] > sc[o] ? 1 : sc[i] === sc[o] ? .5 : 0; })); }
+  return M;
+}
+
+function history(W){
+  const D = G.D, past = G.hist[D.league.league_id]; if (!past) return null;
+  const cur = String(D.league.season), games = [], names = {};
+  [...past].reverse().forEach(s => { Object.assign(names, s.names); s.games.forEach(g => games.push({ season: s.season, w: g[0], a: g[1], pa: g[2], b: g[3], pb: g[4] })); });
+  D.teams.forEach(t => names[t.oid] = t.name);
+  for (let w = D.start; w <= W; w++) D.pairs[w].forEach(([a, b]) => { const pa = D.scores[w][a], pb = D.scores[w][b]; if (D.T[a] && D.T[b] && (pa > 0 || pb > 0)) games.push({ season: cur, w, a: D.T[a].oid, pa, b: D.T[b].oid, pb }); });
+  const h2h = {}, rec = {}; let prior = 0;
+  const up = (k, val, better, g, txt) => { if (!rec[k] || better(val, rec[k].val)) rec[k] = { val, txt, isNew: g.season === cur && g.w === W, when: `${g.season} · Wk ${g.w}` }; };
+  games.forEach(g => { if (!(g.season === cur && g.w === W)) prior++;
+    const k = [g.a, g.b].sort().join('|'), r = h2h[k] = h2h[k] || { n: 0 }; r.n++; if (g.pa !== g.pb) { const wn = g.pa > g.pb ? g.a : g.b; r[wn] = (r[wn] || 0) + 1; }
+    const hiO = g.pa >= g.pb ? g.a : g.b, loO = hiO === g.a ? g.b : g.a, hi = Math.max(g.pa, g.pb), lo = Math.min(g.pa, g.pb), nm = o => names[o] || 'Former manager';
+    up('Highest score ever', hi, (x, y) => x > y, g, `${nm(hiO)} — ${f2(hi)}`);
+    if (lo > 0) up('Lowest score ever', lo, (x, y) => x < y, g, `${nm(loO)} — ${f2(lo)}`);
+    up('Biggest blowout', hi - lo, (x, y) => x > y, g, `${nm(hiO)} over ${nm(loO)} by ${f2(hi - lo)}`);
+    up('Closest game', hi - lo, (x, y) => x < y, g, `${nm(hiO)} over ${nm(loO)} by ${f2(hi - lo)}`);
+    up('Biggest shootout', hi + lo, (x, y) => x > y, g, `${nm(hiO)} ${f2(hi)}, ${nm(loO)} ${f2(lo)}`);
+    up('Most points in a loss', lo, (x, y) => x > y, g, `${nm(loO)} — ${f2(lo)}`);
+  });
+  const first = past.length ? past[past.length - 1].season : cur;
+  return { h2h, rec, n: games.length, prior, span: first === cur ? cur : `${first}–${cur}`, seasons: past.length + 1 };
+}
+
+/* ---------------- one-liners ---------------- */
+const QUIPS = {
+  nail: ['{W} survives by {m}. {L} will be thinking about one bench decision all week.', '{m} points. That\'s it. {L} was one garbage-time catch away.', '{W} escapes by {m}; {L} is refreshing the stat corrections page as we speak.'],
+  blow: ['{W} by {m}. This one was over before the late window.', '{L} got run off the field — {W} wins by {m} and it wasn\'t that close.', 'Mercy rule requested. {W} {pw}, {L} {pl}.'],
+  upset: ['Nobody had {W} over {L} on the card. Nobody.', '{L} was the favorite on paper. {W} doesn\'t read the paper.'],
+  tough: ['{L} drops {pl} — more than half the league — and takes the L anyway. The schedule gods are cruel.', '{L} would have beaten most of the league this week. Unfortunately they drew {W}.'],
+  ugly: ['{W} wins with {pw}. A win is a win, but nobody\'s framing that one.', 'Somebody had to win. {W} did, with {pw}.'],
+  plain: ['{W} takes care of business, {pw}–{pl}.', '{W} over {L} by {m}. Solid, unspectacular, effective.', '{L} hangs around, but {W} closes it out by {m}.']
+};
+function quip(g, W, med, prev){
+  const D = G.D, up = prev && prev[g.w] && prev[g.l] && prev[g.w].rank - prev[g.l].rank >= 4;
+  const k = g.m < 5 ? 'nail' : g.m > 40 ? 'blow' : up ? 'upset' : g.pl > med ? 'tough' : g.pw < med ? 'ugly' : 'plain';
+  const list = QUIPS[k], t = list[(W * 31 + (+g.w) * 7 + (+g.l)) % list.length];
+  return t.replace(/\{W\}/g, D.T[g.w].name).replace(/\{L\}/g, D.T[g.l].name).replace(/\{pw\}/g, f2(g.pw)).replace(/\{pl\}/g, f2(g.pl)).replace(/\{m\}/g, f2(g.m));
+}
+function edKey(W, key){ return `recap_edit_${G.D.league.league_id}_${W}_${key}`; }
+function ed(W, key, def){ const k = edKey(W, key), v = store.get(k); return `<span class="ed" contenteditable="true" spellcheck="false" data-ek="${esc(k)}" title="Click to edit — saved in this browser. Clear it to restore the original.">${esc(v || def)}</span>`; }
+const edText = (W, key, def) => () => { const el = document.querySelector(`[data-ek="${edKey(W, key)}"]`); return (el && el.innerText.trim()) || def; };
+document.addEventListener('input', e => { const el = e.target.closest && e.target.closest('.ed'); if (!el) return; const v = el.innerText.trim(); v ? store.set(el.dataset.ek, v) : store.del(el.dataset.ek); });
+
+/* ---------------- render ---------------- */
+function teamHTML(rid, sub){
+  const t = G.D.T[rid]; if (!t) return '';
+  const img = t.avatar ? `<img class="av" src="${esc(t.avatar)}" alt="" onerror="this.style.visibility='hidden'">` : `<span class="av"></span>`;
+  return `<div class="team">${img}<div style="min-width:0"><b>${esc(t.name)}</b>${sub !== false ? `<span class="o">${esc(sub || t.owner)}</span>` : ''}</div></div>`;
+}
+function spark(s, hi){
+  const bw = 9, gap = 3, h = 30;
+  return `<svg class="spark" width="${s.wk.length * (bw + gap)}" height="${h}">` + s.wk.map((x, i) => { const bh = Math.max(2, x.pts / hi * h), c = x.res === 'W' ? 'var(--win)' : x.res === 'L' ? 'var(--loss)' : 'var(--muted)';
+    return `<rect x="${i * (bw + gap)}" y="${h - bh}" width="${bw}" height="${bh}" rx="2" fill="${c}"><title>Wk ${x.w}: ${f2(x.pts)} (${x.res})</title></rect>`; }).join('') + `</svg>`;
+}
+const rec = s => `${s.w}-${s.l}${s.t ? '-' + s.t : ''}`;
+function findTeam(q){ if (!q) return null; q = String(q).toLowerCase().trim(); const ts = G.D.teams;
+  return ts.find(t => t.owner.toLowerCase() === q || t.name.toLowerCase().trim() === q || t.oid === q) || ts.find(t => t.owner.toLowerCase().includes(q) || t.name.toLowerCase().includes(q)) || null; }
+const sgn = (n, f) => (n > 0 ? '+' : n < 0 ? '\u2212' : '') + (f || (x => Math.round(x).toLocaleString()))(Math.abs(n));
+/* Package premium: an approximation of KeepTradeCut's "value adjustment" (their exact formula isn't published).
+   Each asset is weighted so that better players count for more than their sticker value, then the result is expressed as
+   the single asset the weaker side would have to add to make the deal even. */
+const KTC_MAX = 9999;
+function ktcRaw(v, t){ return v <= 0 ? 0 : v * (0.1 + 0.15 * Math.pow(v / 10000, 8) + 0.15 * Math.pow(v / t, 1.3) + 0.1 * Math.pow(v / (KTC_MAX + 2000), 1.28)); }
+function ktcEven(inn, out){
+  const a = inn.filter(v => v > 0), b = out.filter(v => v > 0), sum = x => x.reduce((p, q) => p + q, 0), plain = sum(a) - sum(b);
+  if (!a.length || !b.length) return plain;
+  const t0 = Math.max(...a, ...b), tot = (arr, t) => arr.reduce((p, v) => p + ktcRaw(v, t), 0), ra = tot(a, t0), rb = tot(b, t0);
+  if (Math.abs(ra - rb) < 1e-6) return 0;
+  const hi = ra > rb ? a : b, lo = ra > rb ? b : a, sg = ra > rb ? 1 : -1;
+  const f = x => { const t = Math.max(t0, x); return tot(lo, t) + ktcRaw(x, t) - tot(hi, t); };
+  if (f(KTC_MAX) < 0) return sg * Math.max(KTC_MAX, Math.abs(plain));
+  let L = 0, R = KTC_MAX; for (let i = 0; i < 40; i++) { const m = (L + R) / 2; f(m) < 0 ? L = m : R = m; }
+  return sg * Math.round((L + R) / 2);
+}
+function playerAsset(id){ const nm = pshort(id), v = KTCV[ktcNorm(nm)]; return { label: nm, v: v || 0, miss: v == null }; }
+function pickAsset(p, tierOf){ const D = G.D, slot = D.draft.slotOf[p.roster_id], pid = D.draft.pick[p.round + '-' + slot];
+  if (String(p.season) === String(D.league.season) && pid) { const a = playerAsset(pid); return { label: `${p.season} ${p.round}.${String(slot).padStart(2, '0')} (became ${a.label})`, v: a.v, miss: a.miss }; }
+  const key = `${p.season} ${tierOf(p)} ${ord(p.round)}`, v = KTCV[ktcNorm(key)];
+  return { label: `${key}${D.T[p.roster_id] ? ` (${D.T[p.roster_id].name}'s)` : ''}`, v: v || 0, miss: v == null }; }
+const abbr = t => (t.name.replace(/[^A-Za-z0-9]/g, '').slice(0, 4) || 'T' + t.rid).toUpperCase();
+
+function render(W){
+  G.curW = W;
+  const D = G.D, S = power(W), prev = W > D.start ? power(W - 1) : null, sim = simulate(W, S), H = history(W);
+  const name = r => D.T[r] ? D.T[r].name : 'Team ' + r, T = [];
+  $('status').style.display = 'none';
+  document.title = `${D.league.name} — Week ${W} Recap`;
+
+  const wkScores = Object.entries(D.scores[W]).filter(([r]) => D.T[r]).map(([r, p]) => ({ r, p })).sort((a, b) => b.p - a.p);
+  const hi = wkScores[0], lo = wkScores[wkScores.length - 1], med = median(wkScores.map(x => x.p));
+  const games = D.pairs[W].filter(([a, b]) => D.T[a] && D.T[b]).map(([a, b]) => { const pa = D.scores[W][a], pb = D.scores[W][b]; return pa >= pb ? { w:a, l:b, pw:pa, pl:pb, m:pa - pb } : { w:b, l:a, pw:pb, pl:pa, m:pb - pa }; }).sort((x, y) => x.m - y.m);
+  const ranked = Object.values(S).filter(s => s.g).sort((a, b) => a.rank - b.rank);
+
+  /* --- hero + headline --- */
+  let seasonHi = 0; for (let w = D.start; w < W; w++) Object.values(D.scores[w] || {}).forEach(p => seasonHi = Math.max(seasonHi, p));
+  const big = games[games.length - 1], tight = games[0];
+  const headDef = W > D.start && hi.p > seasonHi ? `${name(hi.r)} hangs ${f2(hi.p)} — the biggest score of the season — and ${name(lo.r)} picks up the tab.`
+    : tight && tight.m < 2 ? `${name(tight.w)} edges ${name(tight.l)} by ${f2(tight.m)} in the game of the week, while ${name(hi.r)} takes the $${CONFIG.stake}.`
+    : big && big.m > 50 ? `${name(big.w)} flattens ${name(big.l)} by ${f2(big.m)}; ${name(hi.r)} takes the $${CONFIG.stake} off ${name(lo.r)}.`
+    : `${name(hi.r)} tops the league with ${f2(hi.p)}, and ${name(lo.r)} pays for it.`;
+  let h = `<header class="hero"><div class="kicker">${esc(D.league.name)} · ${esc(D.league.season || '')} season</div><h1>Week ${W} Recap</h1>
+    ${SHOW.headline ? `<div class="headline">${ed(W, 'headline', headDef)}</div>` : ''}
+    <div class="sub">${D.teams.length} teams · ${D.playoffTeams} make the playoffs · regular season ends Week ${D.regEnd}${D.median ? ' · includes weekly game vs. league median' : ''}</div></header>`;
+  T.push(`🏈 ${D.league.name} — WEEK ${W} RECAP`); if (SHOW.headline) T.push(edText(W, 'headline', headDef)); T.push('');
+
+  /* --- money --- */
+  if (SHOW.money) {
+    const led = Object.values(S).filter(s => s.hiW || s.loW).map(s => ({ r: s.rid, net: (s.hiW - s.loW) * CONFIG.stake })).sort((a, b) => b.net - a.net);
+    h += `<section><h2>The $${CONFIG.stake} <small>high score collects, low score pays</small></h2>
+      <div class="card money">
+        <div><div class="lab">High score — collects</div>${teamHTML(hi.r)}<div class="big win">${f2(hi.p)}</div></div>
+        <div class="mid"><div class="big">$${CONFIG.stake}</div><div class="lab">← pays</div></div>
+        <div class="r"><div class="lab">Low score — pays up</div>${teamHTML(lo.r)}<div class="big loss">${f2(lo.p)}</div></div>
+      </div>
+      <div class="chips">${led.map(v => `<span class="chip">${esc(name(v.r))} <b class="${v.net > 0 ? 'win' : v.net < 0 ? 'loss' : 'muted'}">${v.net > 0 ? '+' : v.net < 0 ? '−' : ''}$${Math.abs(v.net)}</b></span>`).join('')}</div>
+      <p class="note" style="margin-top:8px">Season ledger through Week ${W}.</p></section>`;
+    T.push(`💰 $${CONFIG.stake}: ${name(lo.r)} (${f2(lo.p)}) pays ${name(hi.r)} (${f2(hi.p)})`, '');
+  }
+
+  /* --- scoreboard + one-liners --- */
+  if (SHOW.scoreboard) {
+    h += `<section><h2>Scoreboard</h2>${D.median ? `<p class="note">League median this week: ${f2(med)}</p>` : ''}<div class="grid g3">` + games.map(g => {
+      const tags = (g.m < 5 ? '<span class="tag hot">Nail-biter</span>' : '') + (g.m > 40 ? '<span class="tag cool">Blowout</span>' : '');
+      return `<div class="card">${tags}<div class="mu"><div>${teamHTML(g.w)}</div><div class="num win">${f2(g.pw)}</div><div class="lose">${teamHTML(g.l)}</div><div class="num lose">${f2(g.pl)}</div></div>
+        ${SHOW.roasts ? `<div class="quip">${ed(W, `q_${g.w}_${g.l}`, quip(g, W, med, prev))}</div>` : `<div class="muted" style="font-size:12px;margin-top:6px">Margin ${f2(g.m)}</div>`}</div>`;
+    }).join('') + `</div></section>`;
+    T.push('📊 SCORES'); games.slice().sort((a, b) => b.pw - a.pw).forEach(g => { T.push(`${name(g.w)} ${f2(g.pw)} def. ${name(g.l)} ${f2(g.pl)}`); if (SHOW.roasts) T.push(() => '  ' + edText(W, `q_${g.w}_${g.l}`, quip(g, W, med, prev))()); }); T.push('');
+  }
+
+  /* --- awards --- */
+  if (SHOW.awards) {
+    const aw = [];
+    if (games.length) {
+      const tough = games.slice().sort((a, b) => b.pl - a.pl)[0], lucky = games.slice().sort((a, b) => a.pw - b.pw)[0];
+      aw.push(['Closest call', `${esc(name(tight.w))} over ${esc(name(tight.l))}`, `by ${f2(tight.m)}`]);
+      aw.push(['Biggest beatdown', `${esc(name(big.w))} over ${esc(name(big.l))}`, `by ${f2(big.m)}`]);
+      aw.push(['Tough-luck loss', esc(name(tough.l)), `${f2(tough.pl)} points and still lost`]);
+      aw.push(['Got away with one', esc(name(lucky.w)), `won with just ${f2(lucky.pw)}`]);
+    }
+    let bestS = null, bestB = null, benchTop = null;
+    Object.values(D.raw[W]).forEach(m => { if (!D.T[m.roster_id]) return; const pp = m.players_points || {}, st = new Set(m.starters || []); let bench = 0;
+      for (const id in pp) { const p = +pp[id] || 0; if (st.has(id)) { if (!bestS || p > bestS.p) bestS = { id, p, r: m.roster_id }; } else { bench += p; if (!bestB || p > bestB.p) bestB = { id, p, r: m.roster_id }; } }
+      if (!benchTop || bench > benchTop.p) benchTop = { p: bench, r: m.roster_id }; });
+    if (bestS) { aw.push(['Player of the week', esc(pname(bestS.id)), `${f2(bestS.p)} pts for ${esc(name(bestS.r))}`]); T.push(`⭐ Player of the week: ${pshort(bestS.id)} (${f2(bestS.p)}) — ${name(bestS.r)}`, ''); }
+    if (bestB && bestB.p > 0) aw.push(['Best player left on a bench', esc(pname(bestB.id)), `${f2(bestB.p)} pts riding pine for ${esc(name(bestB.r))}`]);
+    if (benchTop && benchTop.p > 0) aw.push(['Deepest bench', esc(name(benchTop.r)), `${f2(benchTop.p)} bench points`]);
+    h += `<section><h2>Awards</h2><div class="grid g3">${aw.map(a => `<div class="card award"><div class="lab">${a[0]}</div><div class="v">${a[1]}</div><div class="muted">${a[2]}</div></div>`).join('')}</div></section>`;
+  }
+
+  /* --- median watch --- */
+  if (SHOW.medianWatch && D.median) {
+    const grp = { 'Swept the week (2-0)': [], 'Beat their opponent, lost to the median': [], 'Lost their matchup, beat the median': [], 'Swept the wrong way (0-2)': [] };
+    games.forEach(g => { (g.pw > med ? grp['Swept the week (2-0)'] : grp['Beat their opponent, lost to the median']).push(g.w); (g.pl > med ? grp['Lost their matchup, beat the median'] : grp['Swept the wrong way (0-2)']).push(g.l); });
+    const edge = wkScores.filter(x => x.p > med).pop(), miss = wkScores.find(x => x.p <= med);
+    h += `<section><h2>Median Watch</h2><p class="note">Everyone also plays the league median each week (${f2(med)} this week).${edge && miss ? ` Last one over the line: ${esc(name(edge.r))} (${f2(edge.p)}). First one under: ${esc(name(miss.r))} (${f2(miss.p)}).` : ''}</p>
+      <div class="grid g2">${Object.entries(grp).filter(([, v]) => v.length).map(([k, v]) => `<div class="card award"><div class="lab">${k}</div><div class="v" style="font-size:14px;font-weight:500">${v.map(r => esc(name(r))).join(' · ')}</div></div>`).join('')}</div>
+      <div class="chips">${ranked.slice().sort((a, b) => b.medW - a.medW).map(s => `<span class="chip">${esc(name(s.rid))} <b>${s.medW}-${s.medL}</b></span>`).join('')}</div><p class="note" style="margin-top:8px">Season record against the median.</p></section>`;
+  }
+
+  /* --- one manager vs. the median, all season --- */
+  const mtT = SHOW.medianTracker && D.median ? findTeam(qs.get('mt') || CONFIG.medianTracker) : null;
+  if (mtT) {
+    const s = S[mtT.rid], wk = s.wk, mg = wk.map(x => x.pts - x.medVal), mx = Math.max(...mg.map(Math.abs), 1), bw = 38, gap = 12, hh = 120, mid = hh / 2;
+    const rk = ranked.slice().sort((a, b) => b.medW - a.medW || b.pf - a.pf).findIndex(x => x.rid === mtT.rid) + 1;
+    const best = Math.max(...mg), worst = Math.min(...mg); let rw = 0, rl = 0;
+    const svg = `<svg width="${wk.length * (bw + gap)}" height="${hh + 20}" role="img" aria-label="Margin vs. median by week"><line x1="0" x2="${wk.length * (bw + gap)}" y1="${mid}" y2="${mid}" stroke="var(--line)" stroke-width="2"/>` +
+      wk.map((x, i) => { const m = mg[i], bh = Math.max(2, Math.abs(m) / mx * (mid - 14)), up = m > 0;
+        return `<rect x="${i * (bw + gap)}" y="${up ? mid - bh : mid}" width="${bw}" height="${bh}" rx="3" fill="${up ? 'var(--win)' : 'var(--loss)'}"><title>Wk ${x.w}: ${f2(x.pts)} vs median ${f2(x.medVal)}</title></rect><text x="${i * (bw + gap) + bw / 2}" y="${up ? mid - bh - 4 : mid + bh + 12}" text-anchor="middle" font-size="11" fill="var(--ink)">${sgn(m, f1)}</text><text x="${i * (bw + gap) + bw / 2}" y="${hh + 16}" text-anchor="middle" font-size="11" fill="var(--muted)">Wk ${x.w}</text>`; }).join('') + `</svg>`;
+    h += `<section><h2>${esc(mtT.name)} vs. the Median <small>${esc(mtT.owner)} · season tracker</small></h2>
+      <div class="grid g3"><div class="card award"><div class="lab">Record vs. median</div><div class="big ${s.medW > s.medL ? 'win' : s.medW < s.medL ? 'loss' : ''}" style="font-size:40px;font-weight:800">${s.medW}-${s.medL}</div><div class="muted">${ord(rk)} of ${ranked.length} in the league</div></div>
+        <div class="card award"><div class="lab">Average margin</div><div class="big" style="font-size:40px;font-weight:800">${sgn(mean(mg), f1)}</div><div class="muted">points per week vs. the median</div></div>
+        <div class="card award"><div class="lab">Best / worst week</div><div class="v"><span class="win">${sgn(best, f1)}</span> / <span class="loss">${sgn(worst, f1)}</span></div><div class="muted">Head-to-head over the same weeks: ${s.h2hW}-${s.h2hG - s.h2hW}</div></div></div>
+      <div class="card scroll" style="margin-top:12px">${svg}</div>
+      <div class="card scroll" style="margin-top:12px"><table class="tbl"><tr><th>Week</th><th class="r">Score</th><th class="r">Median</th><th class="r">Margin</th><th class="c">Result</th><th class="c">Running record</th><th>Matchup that week</th></tr>` +
+      wk.map((x, i) => { x.med ? rw++ : rl++;
+        return `<tr><td>Week ${x.w}</td><td class="r">${f2(x.pts)}</td><td class="r muted">${f2(x.medVal)}</td><td class="r ${x.med ? 'win' : 'loss'}">${sgn(mg[i], f2)}</td><td class="c ${x.med ? 'win' : 'loss'}"><b>${x.med ? 'W' : 'L'}</b></td><td class="c">${rw}-${rl}</td><td class="muted">${x.opp != null ? `${x.res} vs ${esc(name(x.opp))}, ${f2(x.pts)}–${f2(x.oppPts)}` : '—'}</td></tr>`; }).join('') + `</table></div></section>`;
+    T.push(`📏 ${mtT.name} vs. the median: ${s.medW}-${s.medL} (${sgn(mean(mg), f1)}/wk)`, '');
+  }
+
+  /* --- manager report card --- */
+  if (SHOW.reportCard) {
+    const C = coach(W);
+    h += `<section><h2>Manager Report Card <small>points left on the bench</small></h2>`;
+    if (!C) h += `<div class="card muted">Loading player positions…</div>`;
+    else {
+      const rows = Object.values(C).filter(c => c.opt > 0).sort((a, b) => b.left - a.left);
+      h += `<p class="note">Compares the lineup each manager set with the best lineup they could have set from that week's roster (current taxi-squad players excluded). Worst coach at the top.</p>
+      <div class="card scroll"><table class="tbl"><tr><th>#</th><th>Team</th><th class="r">Left on bench, Wk ${W}</th><th class="r">Season total</th><th class="r">Lineup efficiency</th><th class="c">Losses a better lineup wins</th></tr>` +
+      rows.map((c, i) => { const wk = c.wk[W], eff = c.opt ? c.act / c.opt : 1;
+        return `<tr><td class="num">${i + 1}</td><td>${teamHTML(c.rid)}</td><td class="r">${wk ? f1(wk.left) : '—'}</td><td class="r num ${i === 0 ? 'loss' : ''}">${f1(c.left)}</td><td class="r">${Math.round(eff * 100)}%</td><td class="c ${c.cost ? 'loss' : 'muted'}">${c.cost || '–'}</td></tr>`; }).join('') + `</table></div>`;
+      const worst = rows.slice().sort((a, b) => ((b.wk[W] || {}).left || 0) - ((a.wk[W] || {}).left || 0))[0];
+      if (worst && worst.wk[W]) T.push(`🪑 Worst lineup of the week: ${name(worst.rid)} left ${f1(worst.wk[W].left)} on the bench`, `🤡 Season's worst coach: ${name(rows[0].rid)} (${f1(rows[0].left)} left on the bench)`, '');
+    }
+    h += `</section>`;
+  }
+
+  /* --- next week --- */
+  const NW = W + 1;
+  if (SHOW.preview) {
+    if (NW <= D.regEnd && (D.pairs[NW] || []).length) {
+      const ng = D.pairs[NW].filter(([a, b]) => D.T[a] && D.T[b]).map(([a, b]) => ({ a, b, heat: sim[a].lev + sim[b].lev })).sort((x, y) => y.heat - x.heat);
+      const stakeTag = r => { const x = sim[r];
+        if (x.po > .97 && x.lev < .03) return '<span class="tag">Cruising</span>';
+        if (x.po < .03 && x.lev < .03) return '<span class="tag">Playing spoiler</span>';
+        if (x.lev >= .15 && x.po < .5) return '<span class="tag hot">Must win</span>';
+        if (x.lev >= .12) return '<span class="tag gold">Big swing</span>';
+        return ''; };
+      const rivalry = (a, b) => { if (!SHOW.rivalry) return ''; if (!H) return '<div class="hist">Loading league history…</div>';
+        const oa = D.T[a].oid, ob = D.T[b].oid, r = H.h2h[[oa, ob].sort().join('|')]; if (!r) return '<div class="hist">First-ever meeting.</div>';
+        const wa = r[oa] || 0, wb = r[ob] || 0;
+        return `<div class="hist">All-time: ${wa === wb ? `series tied ${wa}–${wb}` : `<b>${esc(name(wa > wb ? a : b))}</b> leads ${Math.max(wa, wb)}–${Math.min(wa, wb)}`} <span class="muted">(${r.n} meeting${r.n > 1 ? 's' : ''}, ${H.span})</span></div>`; };
+      T.push(`👀 WEEK ${NW} PREVIEW`);
+      h += `<section><h2>Week ${NW} Preview</h2><p class="note">Win chance comes from the same simulation. "Win → / Lose →" shows each team's playoff odds depending on this week's result — the bigger the gap, the more this game matters.${D.median ? ' Each team also plays the median, so a loss here isn\'t always an 0-fer.' : ''}</p><div class="grid g2">` +
+      ng.map((g, i) => { const pa = sim[g.a].pWin ?? .5;
+        const row = r => `<div class="row"><div>${teamHTML(r, `${rec(S[r])} · ${f1(S[r].avg)}/wk · #${S[r].rank} power`)}</div><div class="pct">${pct(sim[r].pWin ?? .5)}</div></div>
+          <div class="sw">${stakeTag(r)}Playoffs ${pct(sim[r].po)} · Win → <b class="win">${pct(sim[r].ifW ?? sim[r].po)}</b> · Lose → <b class="loss">${pct(sim[r].ifL ?? sim[r].po)}</b></div>`;
+        const mw = [g.a, g.b].filter(r => sim[r].lev >= .15 && sim[r].po < .5).map(name);
+        T.push(`${name(g.a)} (${pct(pa)}) vs ${name(g.b)} (${pct(1 - pa)})${i === 0 ? ' ⭐ Game of the Week' : ''}${mw.length ? ' — MUST WIN: ' + mw.join(' & ') : ''}`);
+        return `<div class="card prev">${i === 0 ? '<span class="tag acc">Game of the week</span>' : ''}${Math.abs(pa - .5) < .05 ? '<span class="tag">Coin flip</span>' : ''}${row(g.a)}<div class="split"><i style="width:${Math.round(pa * 100)}%"></i></div>${row(g.b)}${rivalry(g.a, g.b)}</div>`; }).join('') + `</div></section>`;
+    } else h += `<section><h2>Up Next</h2><div class="card">The regular season is done — playoffs start Week ${D.regEnd + 1}.</div></section>`;
+  }
+
+  /* --- power rankings --- */
+  if (SHOW.powerRankings) {
+    const maxPts = Math.max(...ranked.flatMap(s => s.wk.map(x => x.pts)), 1);
+    h += `<section><h2>Power Rankings &amp; Trends</h2><p class="note">Ranked on scoring average (50%), last three weeks (30%) and all-play record (20%). Luck = actual head-to-head wins minus the wins you'd expect from your scores.</p>
+    <div class="card scroll"><table class="tbl"><tr><th>#</th><th></th><th>Team</th><th class="c">Record</th><th class="r">Avg</th><th>Week by week</th><th class="r">Last 3 vs avg</th><th class="c">Streak</th><th class="c">All-play</th><th class="r">Luck</th></tr>` +
+    ranked.map(s => { const p = prev && prev[s.rid] && prev[s.rid].rank, mv = p ? p - s.rank : 0;
+      const mvH = !p || !mv ? '<span class="muted">–</span>' : mv > 0 ? `<span class="win">▲${mv}</span>` : `<span class="loss">▼${-mv}</span>`;
+      const fm = s.g >= 4 ? `<span class="${s.form > 3 ? 'win' : s.form < -3 ? 'loss' : 'muted'}">${s.form > 0 ? '+' : ''}${f1(s.form)}</span>` : '<span class="muted">—</span>';
+      return `<tr><td class="num">${s.rank}</td><td>${mvH}</td><td>${teamHTML(s.rid)}</td><td class="c">${rec(s)}</td><td class="r">${f1(s.avg)}</td><td>${spark(s, maxPts)}</td><td class="r">${fm}</td><td class="c ${s.streak[0] === 'W' ? 'win' : s.streak[0] === 'L' ? 'loss' : ''}">${s.streak}</td><td class="c">${s.apW}-${s.apL}</td><td class="r ${s.luck > .5 ? 'win' : s.luck < -.5 ? 'loss' : 'muted'}">${s.luck > 0 ? '+' : ''}${f1(s.luck)}</td></tr>`; }).join('') + `</table></div></section>`;
+    const hot = ranked.filter(s => s.g >= 4).sort((a, b) => b.form - a.form);
+    T.push('📈 POWER RANKINGS'); ranked.forEach(s => T.push(`${s.rank}. ${name(s.rid)} (${rec(s)}, ${f1(s.avg)}/wk)`)); T.push('');
+    if (hot.length) T.push(`🔥 Heating up: ${name(hot[0].rid)} (${hot[0].form > 0 ? '+' : ''}${f1(hot[0].form)} vs season avg)`, `🧊 Cooling off: ${name(hot[hot.length - 1].rid)} (${f1(hot[hot.length - 1].form)})`, '');
+  }
+
+  /* --- trophy case --- */
+  if (SHOW.trophyCase) {
+    const cols = [['🏆', 'hiW', 'Weekly high score'], ['🚽', 'loW', 'Weekly low score'], ['🍀', 'lucky', 'Won while scoring below the median'], ['💔', 'tough', 'Lost while scoring above the median'], ['💥', 'blow', 'Wins by 40+'], ['😬', 'heart', 'Losses by under 5']];
+    const rows = ranked.slice().sort((a, b) => (b.hiW - b.loW) - (a.hiW - a.loW) || b.pf - a.pf);
+    h += `<section><h2>Trophy &amp; Toilet Case <small>season tallies</small></h2><p class="note">${cols.map(c => `${c[0]} ${c[2].toLowerCase()}`).join(' · ')}</p>
+      <div class="card scroll"><table class="tbl"><tr><th>Team</th>${cols.map(c => `<th class="c" title="${c[2]}">${c[0]}</th>`).join('')}</tr>` +
+      rows.map(s => `<tr><td>${teamHTML(s.rid)}</td>${cols.map(c => `<td class="c ${s[c[1]] ? '' : 'muted'}">${s[c[1]] || '·'}</td>`).join('')}</tr>`).join('') + `</table></div></section>`;
+  }
+
+  /* --- schedule luck --- */
+  if (SHOW.scheduleLuck) {
+    const M = schedLuck(W), rs = ranked.map(s => s.rid);
+    h += `<section><h2>Schedule Luck <small>what if you'd had someone else's schedule?</small></h2><p class="note">Each row is a team; each column is a schedule. The number is that team's head-to-head wins if it had played that schedule (the outlined box is the real one). Green = they'd have more wins, red = fewer.${D.median ? ' Median games aren\'t affected by schedule, so they\'re left out.' : ''}</p>
+      <div class="card scroll"><table class="tbl mx"><tr><th style="text-align:left">Team ↓ / Schedule →</th>${rs.map(j => `<th title="${esc(name(j))}'s schedule">${esc(abbr(D.T[j]))}</th>`).join('')}<th>Best</th><th>Worst</th></tr>` +
+      rs.map(i => { const row = rs.map(j => M[i][j]), act = M[i][i];
+        return `<tr><td class="t">${esc(name(i))}</td>${rs.map(j => `<td class="${i === j ? 'self' : M[i][j] > act ? 'up' : M[i][j] < act ? 'dn' : ''}">${M[i][j] % 1 ? f1(M[i][j]) : M[i][j]}</td>`).join('')}<td class="win">${Math.max(...row)}</td><td class="loss">${Math.min(...row)}</td></tr>`; }).join('') + `</table></div></section>`;
+  }
+
+  /* --- playoff + title odds --- */
+  const left = D.regEnd - W;
+  const seeds = seedOrder(D.teams.map(t => ({ rid: t.rid, wv: S[t.rid].winval, pf: S[t.rid].pf, div: t.div })), D);
+  const seedOf = Object.fromEntries(seeds.map((x, i) => [x.rid, i + 1]));
+  if (SHOW.playoffOdds) {
+    const od = D.teams.map(t => t.rid).sort((a, b) => sim[b].po - sim[a].po || seedOf[a] - seedOf[b]), TO = SHOW.titleOdds;
+    h += `<section><h2>Playoff${TO ? ' &amp; Title' : ''} Odds <small>${CONFIG.sims.toLocaleString()} simulated seasons</small></h2><p class="note">${left ? `${left} week${left > 1 ? 's' : ''} left. Each remaining game is simulated from every team's scoring so far (pulled toward league average early in the year), then seeded by record with points-for as the tiebreak.` : 'Regular season is complete.'}${TO ? ' The bracket is then played out as single-game rounds.' : ''}</p>
+    <div class="card scroll"><table class="tbl"><tr><th>Team</th><th class="c">Seed now</th><th class="c">Record</th><th class="r">PF</th><th class="r">Proj. wins</th><th colspan="2">Make playoffs</th>${sim._byes ? '<th class="r">Bye</th>' : ''}${TO ? '<th class="r">Reach final</th><th class="r">Win title</th>' : ''}</tr>` +
+    od.map(r => `<tr><td>${teamHTML(r)}</td><td class="c">${seedOf[r]}</td><td class="c">${rec(S[r])}</td><td class="r">${f1(S[r].pf)}</td><td class="r">${f1(sim[r].wins)}</td><td class="num r" style="width:64px">${pct(sim[r].po)}</td><td><div class="pbar"><i style="width:${Math.round(sim[r].po * 100)}%"></i></div></td>${sim._byes ? `<td class="r">${pct(sim[r].bye)}</td>` : ''}${TO ? `<td class="r">${pct(sim[r].fin)}</td><td class="r num gold">${pct(sim[r].champ)}</td>` : ''}</tr>`).join('') + `</table></div></section>`;
+    T.push(`🎲 PLAYOFF ODDS${TO ? ' (title odds)' : ''}`); od.forEach(r => T.push(`${name(r)}: ${pct(sim[r].po)}${TO ? ` (${pct(sim[r].champ)})` : ''}`)); T.push('');
+  }
+
+  /* --- race for the 1.01 --- */
+  if (SHOW.draftRace) {
+    const ns = String(+D.league.season + 1), rounds = (D.league.settings || {}).draft_rounds || 4, own = {};
+    D.teams.forEach(t => { own[t.rid] = {}; for (let r = 1; r <= rounds; r++) own[t.rid][r] = t.rid; });
+    D.picks.filter(p => String(p.season) === ns && own[p.roster_id] && p.round <= rounds).forEach(p => own[p.roster_id][p.round] = p.owner_id);
+    const held = {}; D.teams.forEach(t => held[t.rid] = { r1: 0, n: 0 });
+    Object.values(own).forEach(o => Object.entries(o).forEach(([r, w]) => { if (held[w]) { held[w].n++; if (+r === 1) held[w].r1++; } }));
+    const rows = D.teams.map(t => t.rid).sort((a, b) => sim[b].p1 - sim[a].p1 || sim[b].top3 - sim[a].top3 || sim[a].maxpf - sim[b].maxpf);
+    h += `<section><h2>Race for the 1.01 <small>${ns} rookie draft</small></h2><p class="note">Draft order goes by max points-for: of the teams that miss the playoffs, the lowest max PF picks first. Odds come from the same simulation, projecting each team's max PF forward. Pick ownership reflects trades to date.</p>
+      <div class="card scroll"><table class="tbl"><tr><th>Team</th><th class="c">Record</th><th class="r">Max PF</th><th class="r">1.01 odds</th><th class="r">Top-3 pick</th><th>Their ${ns} 1st belongs to</th><th class="c">${ns} 1sts held</th><th class="c">${ns} picks held</th></tr>` +
+      rows.map(r => { const o = own[r][1], tr = o !== r;
+        return `<tr><td>${teamHTML(r)}</td><td class="c">${rec(S[r])}</td><td class="r">${f1(sim[r].maxpf)}</td><td class="r num">${pct(sim[r].p1)}</td><td class="r">${pct(sim[r].top3)}</td><td class="${tr ? 'gold' : 'muted'}">${tr ? '→ ' + esc(name(o)) : 'Themselves'}</td><td class="c ${held[r].r1 > 1 ? 'win' : held[r].r1 ? '' : 'loss'}">${held[r].r1}</td><td class="c">${held[r].n}</td></tr>`; }).join('') + `</table></div></section>`;
+  }
+
+  /* --- trades & waivers --- */
+  if (SHOW.moves) {
+    const inWin = t => t.leg === W || (W === D.last && t.leg > W);
+    const pickLbl = p => `${p.season} ${ord(p.round)}${p.roster_id !== p.previous_owner_id || true ? ` (${name(p.roster_id)}'s)` : ''}`;
+    const side = (t, rid) => { const a = Object.entries(t.adds || {}).filter(([, r]) => r === rid).map(([id]) => id);
+      const items = a.map(pshort).concat((t.draft_picks || []).filter(p => p.owner_id === rid).map(pickLbl), (t.waiver_budget || []).filter(b => b.receiver === rid).map(b => `$${b.amount} FAAB`));
+      let pts = null; if (a.length && t.leg <= W) { pts = 0; for (let w = Math.max(t.leg, D.start); w <= W; w++) a.forEach(id => pts += +(D.ptsW[w] || {})[id] || 0); }
+      return { rid, items, pts }; };
+    const trades = D.txns.filter(t => t.type === 'trade' && t.leg <= W + 1), nowT = trades.filter(inWin);
+    const adds = D.txns.filter(t => (t.type === 'waiver' || t.type === 'free_agent') && Object.keys(t.adds || {}).length).map(t => ({ t, bid: (t.settings && t.settings.waiver_bid) || 0, rid: Object.values(t.adds)[0], pid: Object.keys(t.adds)[0], drop: Object.keys(t.drops || {})[0] }));
+    const nowA = adds.filter(a => inWin(a.t)).sort((a, b) => b.bid - a.bid), top = adds.filter(a => a.t.leg <= W + 1).sort((a, b) => b.bid - a.bid)[0];
+    const tradeCard = t => { const sd = (t.roster_ids || []).map(r => side(t, r));
+      return `<div class="card trade"><span class="tag gold">Trade · Week ${t.leg}</span>${sd.map(s => `<div class="side"><b>${esc(name(s.rid))}</b> <span class="muted">gets</span> ${s.items.length ? esc(s.items.join(', ')) : '<span class="muted">nothing listed</span>'}${s.pts != null ? `<div class="muted" style="font-size:12px">Players received have scored <b class="acc">${f1(s.pts)}</b> since</div>` : ''}</div>`).join('')}</div>`; };
+    const budget = (D.league.settings || {}).waiver_budget;
+    h += `<section><h2>Trades &amp; Waivers</h2><p class="note">Moves from Week ${W}${W === D.last ? ' and anything since' : ''}. "Scored since" counts every point the players received have put up since the deal, started or not.</p>`;
+    h += nowT.length ? `<div class="grid g2">${nowT.map(tradeCard).join('')}</div>` : `<div class="card muted">No trades this week. Somebody make a call.</div>`;
+    if (nowA.length) h += `<div class="card" style="margin-top:12px"><div class="lab">Waiver wire${top && top.bid ? ` · biggest bid of the season: $${top.bid} on ${esc(pshort(top.pid))} (${esc(name(top.rid))})` : ''}</div><ul class="plain">${nowA.slice(0, 10).map(a => `<li><b>${esc(name(a.rid))}</b> added ${esc(pname(a.pid))}${a.t.type === 'waiver' ? ` for <b class="gold">$${a.bid}</b>` : ' <span class="muted">(free agent)</span>'}${a.drop ? ` <span class="muted">· dropped ${esc(pshort(a.drop))}</span>` : ''}</li>`).join('')}</ul>${nowA.length > 10 ? `<div class="muted" style="font-size:12px">+ ${nowA.length - 10} more</div>` : ''}</div>`;
+    if (budget) h += `<div class="chips">${D.teams.slice().sort((a, b) => a.faabUsed - b.faabUsed).map(t => `<span class="chip">${esc(t.name)} <b class="gold">$${budget - t.faabUsed}</b></span>`).join('')}</div><p class="note" style="margin-top:8px">FAAB remaining.</p>`;
+    if (trades.length > nowT.length) h += `<details><summary>Every trade this season (${trades.length}) — and how it's going</summary><div class="grid g2" style="margin-top:12px">${trades.map(tradeCard).join('')}</div></details>`;
+    h += `</section>`;
+    if (nowT.length) { T.push('🤝 TRADES'); nowT.forEach(t => T.push((t.roster_ids || []).map(r => { const s = side(t, r); return `${name(r)} gets ${s.items.join(', ') || '—'}`; }).join(' | '))); T.push(''); }
+    if (nowA.length && nowA[0].bid) T.push(`💸 Biggest waiver bid: ${name(nowA[0].rid)} — $${nowA[0].bid} on ${pshort(nowA[0].pid)}`, '');
+  }
+
+  /* --- one manager's trades in KeepTradeCut value --- */
+  const tvT = SHOW.tradeValue ? findTeam(qs.get('tt') || CONFIG.tradeTracker) : null;
+  if (tvT) {
+    h += `<section><h2>${esc(tvT.owner)}'s Trade Ledger <small>${esc(tvT.name)} · KeepTradeCut value</small></h2>`;
+    if (!G.players) h += `<div class="card muted">Loading player names…</div>`;
+    else {
+      const rid = tvT.rid, n = D.teams.length, ns = String(+D.league.season + 1), mpo = D.teams.map(t => t.rid).sort((a, b) => sim[a].maxpf - sim[b].maxpf);
+      const tierOf = p => { if (String(p.season) !== ns) return 'Mid'; const i = mpo.indexOf(p.roster_id); return i < 0 ? 'Mid' : i < n / 3 ? 'Early' : i < 2 * n / 3 ? 'Mid' : 'Late'; };
+      const rows = D.txns.filter(x => x.type === 'trade' && (x.roster_ids || []).includes(rid) && x.leg <= W + 1).map(x => { const inn = [], out = []; let faab = 0;
+        Object.entries(x.adds || {}).forEach(([id, r]) => { if (r === rid) inn.push(playerAsset(id)); });
+        Object.entries(x.drops || {}).forEach(([id, r]) => { if (r === rid) out.push(playerAsset(id)); });
+        (x.draft_picks || []).forEach(p => { if (p.owner_id === rid && p.previous_owner_id !== rid) inn.push(pickAsset(p, tierOf)); else if (p.previous_owner_id === rid && p.owner_id !== rid) out.push(pickAsset(p, tierOf)); });
+        (x.waiver_budget || []).forEach(b => { if (b.receiver === rid) faab += b.amount; if (b.sender === rid) faab -= b.amount; });
+        const sum = a => a.reduce((t, y) => t + y.v, 0), vin = sum(inn), vout = sum(out);
+        return { x, inn, out, faab, vin, vout, raw: vin - vout, net: ktcEven(inn.map(y => y.v), out.map(y => y.v)), with: (x.roster_ids || []).filter(r => r !== rid) }; });
+      const tot = rows.reduce((t, r) => t + r.net, 0), rawTot = rows.reduce((t, r) => t + r.raw, 0), won = rows.filter(r => r.net > 0).length, lost = rows.filter(r => r.net < 0).length;
+      const anyMiss = rows.some(r => r.inn.concat(r.out).some(a => a.miss));
+      const al = a => a.length ? a.slice().sort((p, q) => q.v - p.v).map(y => `${esc(y.label)} <span class="muted">${y.miss ? 'n/r' : y.v.toLocaleString()}</span>`).join('<br>') : '<span class="muted">—</span>';
+      const top = rows.slice().sort((a, b) => b.net - a.net);
+      if (!rows.length) h += `<div class="card muted">No trades yet this season.</div>`;
+      else h += `<div class="grid g3"><div class="card award"><div class="lab">Net value from trades</div><div class="big ${tot > 0 ? 'win' : tot < 0 ? 'loss' : ''}" style="font-size:44px;font-weight:800">${sgn(tot)}</div><div class="muted">across ${rows.length} trade${rows.length > 1 ? 's' : ''} since the ${esc(D.league.season)} league year opened · ${sgn(rawTot)} before the package premium</div></div>
+          <div class="card award"><div class="lab">Trades won / lost on value</div><div class="big" style="font-size:44px;font-weight:800"><span class="win">${won}</span>–<span class="loss">${lost}</span></div><div class="muted">${rows.length - won - lost ? (rows.length - won - lost) + ' even' : 'by today\'s values'}</div></div>
+          <div class="card award"><div class="lab">Best / worst deal</div><div class="v"><span class="win">${sgn(top[0].net)}</span> <span class="muted" style="font-size:12px;font-weight:400">with ${esc(top[0].with.map(name).join(', '))}</span></div><div class="v"><span class="loss">${sgn(top[top.length - 1].net)}</span> <span class="muted" style="font-size:12px;font-weight:400">with ${esc(top[top.length - 1].with.map(name).join(', '))}</span></div></div></div>
+        <p class="note" style="margin-top:10px">Every asset is priced at today's KeepTradeCut value (${esc(KTC.format)}, snapshot from ${esc(KTC.asOf)}), not its value when the deal was made. <b>Sticker net</b> is the plain sum of what he got minus what he gave. <b>Premium</b> adjusts for the fact that one great player is worth more than several lesser ones adding up to the same number; <b>Net</b> is what the other side would have to add to make the deal even. The premium is an approximation of KeepTradeCut's value adjustment, not their exact formula. ${esc(ns)} picks are priced Early/Mid/Late by where the original team sits in max points-for; later years are priced as Mid. ${esc(String(D.league.season))} rookie picks are priced as the player they became. FAAB is shown but not valued.${anyMiss ? ' "n/r" = outside KeepTradeCut\'s top 500, counted as 0.' : ''}</p>
+        <div class="card scroll"><table class="tbl"><tr><th>Date</th><th>With</th><th>Got</th><th>Gave</th><th class="r">Sticker net</th><th class="r">Premium</th><th class="r">Net</th></tr>` +
+        rows.map(r => `<tr style="vertical-align:top"><td class="muted" style="white-space:nowrap">${new Date(r.x.created || r.x.status_updated || 0).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td><td>${esc(r.with.map(name).join(', '))}</td><td>${al(r.inn)}${r.faab > 0 ? `<br><span class="gold">$${r.faab} FAAB</span>` : ''}</td><td>${al(r.out)}${r.faab < 0 ? `<br><span class="gold">$${-r.faab} FAAB</span>` : ''}</td><td class="r muted">${sgn(r.raw)}</td><td class="r ${r.net - r.raw > 0 ? 'win' : r.net - r.raw < 0 ? 'loss' : 'muted'}">${sgn(r.net - r.raw)}</td><td class="r num ${r.net > 0 ? 'win' : r.net < 0 ? 'loss' : ''}">${sgn(r.net)}</td></tr>`).join('') +
+        `<tr><td colspan="4"><b>Season total</b></td><td class="r"><b>${sgn(rawTot)}</b></td><td class="r"><b>${sgn(tot - rawTot)}</b></td><td class="r num ${tot > 0 ? 'win' : tot < 0 ? 'loss' : ''}">${sgn(tot)}</td></tr></table></div>`;
+      if (rows.length) T.push(`🧾 ${tvT.name} trade ledger: ${sgn(tot)} KTC value across ${rows.length} trades, package premium included (${won} won, ${lost} lost)`, '');
+    }
+    h += `</section>`;
+  }
+
+  /* --- record book --- */
+  if (SHOW.recordBook) {
+    h += `<section><h2>League Record Book</h2>`;
+    if (!H) h += `<div class="card muted">Loading league history…</div>`;
+    else {
+      const rs = Object.entries(H.rec), fresh = rs.filter(([, r]) => r.isNew && H.prior > 0);
+      h += `<p class="note">${H.n.toLocaleString()} regular-season games on record across ${H.seasons} season${H.seasons > 1 ? 's' : ''} (${H.span}).</p><div class="grid g3">${rs.map(([k, r]) => `<div class="card award">${r.isNew && H.prior > 0 ? '<span class="tag hot">New record this week</span>' : ''}<div class="lab">${k}</div><div class="v">${esc(r.txt)}</div><div class="muted">${esc(r.when)}</div></div>`).join('')}</div>`;
+      fresh.forEach(([k, r]) => T.push(`🚨 NEW LEAGUE RECORD — ${k}: ${r.txt}`));
+    }
+    h += `</section>`;
+  }
+
+  $('app').innerHTML = h;
+  G.text = () => T.map(x => typeof x === 'function' ? x() : x).join('\n').trim();
+}
+
+/* ---------------- controls ---------------- */
+$('leagueSel').onchange = e => { store.set('recap_league', e.target.value); loadLeague(e.target.value).catch(fail); };
+$('weekSel').onchange = e => render(+e.target.value);
+$('reBtn').onclick = () => init();
+$('copyBtn').onclick = async () => {
+  const b = $('copyBtn'), txt = G.text(); if (!txt) return;
+  try { await navigator.clipboard.writeText(txt); }
+  catch (e) { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  b.textContent = 'Copied ✓'; setTimeout(() => b.textContent = 'Copy text recap', 1500);
+};
+
+/* ---------------- sample data (used only if Sleeper can't be reached, or with ?demo) ---------------- */
+let DEMOCACHE = null;
+function demoApi(path){
+  if (!DEMOCACHE) {
+    const names = ['Gridiron Goblins','Hail Marys','Sunday Scaries','Waiver Wire Heroes','Bench Mob','End Zone Elite','Fourth & Long','Blitz Brigade','The Audibles','Red Zone Rebels','Two-Minute Thrill','Punt Intended'];
+    const n = names.length, str = names.map(() => 105 + gauss() * 12), ids = names.map((_, i) => i + 1), sched = {};
+    for (let w = 1; w <= 14; w++) { const r = (w - 1) % (n - 1), arr = [ids[0], ...ids.slice(1).map((_, i) => ids[1 + (i + r) % (n - 1)])]; sched[w] = [];
+      for (let i = 0; i < n / 2; i++) sched[w].push([arr[i], arr[n - 1 - i]]); }
+    const build = upTo => { const mu = {};
+      for (let w = 1; w <= 14; w++) { mu[w] = []; sched[w].forEach((p, mi) => p.forEach(rid => { const pp = {}, all = Array.from({ length: 12 }, (_, k) => 'p' + rid + '_' + k);
+        let tot = 0; if (w <= upTo) all.forEach((id, k) => { const v = Math.max(0, Math.round((str[rid - 1] / 9 + gauss() * 6) * 100) / 100); pp[id] = v; if (k < 9) tot += v; });
+        mu[w].push({ roster_id: rid, matchup_id: mi + 1, points: Math.round(tot * 100) / 100, players_points: pp, players: all, starters: all.slice(0, 9) }); })); }
+      return mu; };
+    const players = {}; ids.forEach(rid => { for (let k = 0; k < 12; k++) players['p' + rid + '_' + k] = { full_name: 'Sample Player ' + rid + '-' + (k + 1), position: ['QB','RB','WR','TE'][k % 4], team: 'FA' }; });
+    DEMOCACHE = { names, ids, mu: build(4), mu2: build(14), players };
+  }
+  const c = DEMOCACHE, old = path.includes('demo_prev'); let m;
+  const lg = o => ({ league_id: o ? 'demo_prev' : 'demo', name: 'Sample League', season: o ? '2025' : '2026', previous_league_id: o ? null : 'demo_prev',
+    roster_positions: ['QB','RB','RB','WR','WR','TE','FLEX','FLEX','SUPER_FLEX','BN','BN','BN'],
+    settings: { playoff_teams: 6, playoff_week_start: 15, start_week: 1, last_scored_leg: 4, league_average_match: 1, divisions: 0, draft_rounds: 4, waiver_budget: 100 } });
+  if (path === '/state/nfl') return { week: 5, season: '2026', league_season: '2026' };
+  if (path === '/players/nfl') return c.players;
+  if (/^\/user\/[^/]+$/.test(path)) return { user_id: 'u1' };
+  if (/^\/league\/[^/]+$/.test(path)) return lg(old);
+  if (/\/leagues\/nfl\//.test(path)) return [lg(false)];
+  if (/\/users$/.test(path)) return c.ids.map(i => ({ user_id: 'u' + i, display_name: 'manager' + i, is_owner: i === 1, metadata: { team_name: c.names[i - 1] } }));
+  if (/\/rosters$/.test(path)) return c.ids.map(i => ({ roster_id: i, owner_id: 'u' + i, taxi: [], settings: { waiver_budget_used: (i * 13) % 60 } }));
+  if (/\/traded_picks$/.test(path)) return [{ season: '2027', round: 1, roster_id: 2, previous_owner_id: 2, owner_id: 1 }];
+  if ((m = path.match(/\/transactions\/(\d+)$/))) return +m[1] !== 4 ? [] : [
+    { type: 'trade', status: 'complete', leg: 4, roster_ids: [1, 2], adds: { p1_0: 2, p2_1: 1 }, drops: { p1_0: 1, p2_1: 2 }, draft_picks: [{ season: '2027', round: 1, roster_id: 2, previous_owner_id: 2, owner_id: 1 }], waiver_budget: [{ sender: 1, receiver: 2, amount: 10 }], status_updated: 2 },
+    { type: 'waiver', status: 'complete', leg: 4, roster_ids: [3], adds: { p5_11: 3 }, drops: { p3_11: 3 }, settings: { waiver_bid: 23 }, status_updated: 1 }];
+  if ((m = path.match(/\/matchups\/(\d+)$/))) return (old ? c.mu2 : c.mu)[m[1]] || [];
+  throw new Error('demo: unknown path ' + path);
+}
+
+init();
+</script>
+</body>
+</html>
