@@ -1,0 +1,88 @@
+name: Refresh KTC snapshot
+
+on:
+  schedule:
+    - cron: "48 11 * * 2"   # Tuesdays 11:48 UTC (6:48am Central during daylight time)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch KeepTradeCut values and update index.html
+        run: |
+          cat > /tmp/update_ktc.py <<'PY'
+          import json, re, sys, urllib.request, datetime
+          from zoneinfo import ZoneInfo
+
+          URL = "https://keeptradecut.com/dynasty-rankings"
+          req = urllib.request.Request(URL, headers={
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                            "(KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+              "Accept": "text/html,application/xhtml+xml",
+              "Accept-Language": "en-US,en;q=0.9",
+          })
+          try:
+              html = urllib.request.urlopen(req, timeout=60).read().decode("utf-8", "replace")
+          except Exception as e:
+              sys.exit(f"Could not load KeepTradeCut: {e}")
+
+          m = re.search(r"playersArray\s*=\s*", html)
+          if not m:
+              sys.exit("playersArray not found on the KeepTradeCut page (blocked or page changed)")
+          players, _ = json.JSONDecoder().raw_decode(html[m.end():])
+
+          raw = ";".join(f"{p['playerName']}|{p['superflexValues']['tep']['value']}" for p in players)
+
+          entries = raw.split(";")
+          problems = []
+          if len(entries) < 450: problems.append(f"only {len(entries)} entries")
+          bad = [e for e in entries if not re.fullmatch(r"[^|;\"\\<>\n]+\|\d+", e)]
+          if bad: problems.append(f"malformed entries: {bad[:3]}")
+          if "Early 1st|" not in raw: problems.append("no rookie pick entries")
+          if not bad:
+              top = max(int(e.rsplit("|", 1)[1]) for e in entries)
+              if not 9000 <= top <= 10000: problems.append(f"top value {top} out of range")
+          if problems:
+              sys.exit("Validation failed: " + "; ".join(problems))
+
+          path = "index.html"
+          src = open(path, encoding="utf-8").read()
+          if src.count("const KTC = {") != 1:
+              sys.exit("Expected exactly one KTC block in index.html")
+          i = src.index("const KTC = {")
+          a = src.index('raw: "', i) + len('raw: "')
+          b = src.index('"', a)
+          if src[a:b] == raw:
+              print("KTC values unchanged; nothing to publish.")
+              sys.exit(0)
+
+          today = datetime.datetime.now(ZoneInfo("America/Chicago")).date()
+          date_str = f"{today:%B} {today.day}, {today.year}"
+          head, n = re.subn(r"asOf: '[^']*'", f"asOf: '{date_str}'", src[i:a], count=1)
+          if n != 1:
+              sys.exit("asOf not found in KTC block")
+          out = src[:i] + head + raw + src[b:]
+          if "const KTCV = {}" not in out[out.index("const KTC = {"):]:
+              sys.exit("KTCV marker missing after edit")
+          open(path, "w", encoding="utf-8").write(out)
+          print(f"Updated KTC snapshot: {len(entries)} entries, as of {date_str}")
+          PY
+          python3 /tmp/update_ktc.py
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Refresh KeepTradeCut snapshot ($(TZ=America/Chicago date '+%B %-d, %Y'))"
+          git push
