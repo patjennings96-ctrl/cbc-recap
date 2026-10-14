@@ -32,10 +32,12 @@ jobs:
           except Exception as e:
               sys.exit(f"Could not load KeepTradeCut: {e}")
 
-          m = re.search(r"playersArray\s*=\s*", html)
+          # KTC embeds the player list as <script type="application/json" id="ktc-players">[...]</script>
+          m = re.search(r"<script[^>]*\bid=[\"']ktc-players[\"'][^>]*>(.*?)</script>", html, re.S)
           if not m:
-              sys.exit("playersArray not found on the KeepTradeCut page (blocked or page changed)")
-          players, _ = json.JSONDecoder().raw_decode(html[m.end():])
+              sys.exit("ktc-players data not found on the KeepTradeCut page (blocked or page changed)")
+          players = json.loads(m.group(1))
+          players.sort(key=lambda p: -p["superflexValues"]["tep"]["value"])
 
           raw = ";".join(f"{p['playerName']}|{p['superflexValues']['tep']['value']}" for p in players)
 
