@@ -535,6 +535,18 @@ function ledger(rid, W, sim){
 }
 /* Positional strength of every roster by KeepTradeCut value: the top few players at each position, ranked across the league. */
 const MK_POS = ['QB', 'RB', 'WR', 'TE'], MK_DEPTH = { QB: 3, RB: 4, WR: 5, TE: 2 };
+/* Trade deadline: trades lock at the first kickoff of the deadline week (Sleeper's trade_deadline setting), which is
+   Thursday's game. `left` = full weeks before the deadline week; 0 = this is the deadline week. */
+function deadline(W){
+  const D = G.D, dl = (D.league.settings || {}).trade_deadline; if (!dl) return { dl: 0, left: 99, locked: false, text: '' };
+  const live = W === D.last, cw = live && G.state && G.state.week > W ? G.state.week : W + 1, left = dl - cw;
+  let kicked = false;
+  if (live && left === 0) { const pt = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hour12: false }).formatToParts(new Date()).map(x => [x.type, x.value]));
+    kicked = ['Fri', 'Sat', 'Sun', 'Mon'].includes(pt.weekday) || (pt.weekday === 'Thu' && +pt.hour >= 12); }
+  const locked = left < 0 || kicked;
+  const text = locked ? '<b>The trade deadline has passed.</b> ' : left === 0 ? '<b>Trade deadline: Thursday\'s kickoff this week.</b> ' : `<b>${left} week${left === 1 ? '' : 's'} until the trade deadline</b> (Thursday's kickoff in Week ${dl}). `;
+  return { dl, left, locked, text };
+}
 function market(sim, W){
   const D = G.D, n = D.teams.length, M = {}; if (!G.players) return null;
   D.teams.forEach(t => { const by = { QB: [], RB: [], WR: [], TE: [] }; let total = 0;
@@ -552,7 +564,7 @@ function market(sim, W){
     if (g1 >= gap && g2 >= gap && A[p] <= half && B[q] <= half && A[q] > half && B[p] > half) cand.push({ a, b, p, q, score: g1 + g2 }); })); }));
   // Near the deadline, only pair teams that would realistically deal: two teams still competing, or a competing team and a
   // rebuilder where the rebuilder gets the younger piece. Two rebuilders only match on young-for-young swaps.
-  const dl = (D.league.settings || {}).trade_deadline, left = dl ? dl - W : 99, locked = !!dl && left <= 0, strict = !locked && left <= (CONFIG.deadlineWindow || 0);
+  const { locked, left } = deadline(W), strict = !locked && left <= (CONFIG.deadlineWindow || 0) - 1;
   const seller = r => M[r].outlook === 'Rebuilder', young = x => x.age != null && x.age <= (CONFIG.youngAge || 25);
   const used = {}, matches = [], yr = +D.league.season + 1;
   const pickFor = gap => [2, 3, 4].map(r => ({ label: `${yr} ${ord(r)}`, v: KTCV[ktcNorm(`${yr} Mid ${ord(r)}`)] || 0 })).filter(z => z.v).sort((u, v) => Math.abs(u.v - gap) - Math.abs(v.v - gap))[0];
@@ -809,7 +821,7 @@ function render(W){
       const led = Object.fromEntries(D.teams.map(t => { const r = ledger(t.rid, W, sim); return [t.rid, { n: r.length, net: r.reduce((x, y) => x + y.net, 0) }]; }));
       const order = D.teams.map(t => t.rid).sort((a, b) => sim[b].po - sim[a].po), quiet = order.filter(r => !led[r].n);
       const tag = o => `<span class="tag ${o === 'Contender' ? 'acc' : o === 'Rebuilder' ? 'cool' : 'gold'}" style="margin:0">${o === 'Contender' ? 'Buyer' : o === 'Rebuilder' ? 'Seller' : 'Could go either way'}</span>`;
-      h += `<p class="note">${dl && dl >= W ? `<b>${dl - W} week${dl - W === 1 ? '' : 's'} until the trade deadline</b> (after Week ${dl}). ` : ''}Each position shows where a roster ranks in the league on KeepTradeCut value (top ${MK_DEPTH.QB} QBs, ${MK_DEPTH.RB} RBs, ${MK_DEPTH.WR} WRs, ${MK_DEPTH.TE} TEs). Green is a strength to deal from, red is a hole to fill. Buyer/seller comes from playoff odds. Hover a cell for the players.</p>
+      h += `<p class="note">${deadline(W).text}Each position shows where a roster ranks in the league on KeepTradeCut value (top ${MK_DEPTH.QB} QBs, ${MK_DEPTH.RB} RBs, ${MK_DEPTH.WR} WRs, ${MK_DEPTH.TE} TEs). Green is a strength to deal from, red is a hole to fill. Buyer/seller comes from playoff odds. Hover a cell for the players.</p>
         <div class="card scroll"><table class="tbl mx"><tr><th style="text-align:left">Team</th><th style="text-align:left">Outlook</th><th>Playoffs</th>${MK_POS.map(k => `<th>${k}</th>`).join('')}<th>Roster value</th><th>Trades made</th></tr>` +
         order.map(r => { const m = M[r];
           return `<tr><td class="t">${esc(name(r))}</td><td style="text-align:left">${tag(m.outlook)}</td><td>${pct(sim[r].po)}</td>${MK_POS.map(k => `<td class="${cls(m.rank[k])}" title="${esc(m.by[k].slice(0, MK_DEPTH[k]).map(x => x.name).join(', ') || 'none ranked')}"><b>${ord(m.rank[k])}</b></td>`).join('')}<td>${ord(m.totalRank)} <span class="muted">${Math.round(m.total / 1000)}k</span></td><td class="${led[r].n ? '' : 'loss'}">${led[r].n || 'none'}</td></tr>`; }).join('') + `</table></div>`;
