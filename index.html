@@ -125,7 +125,8 @@ const CONFIG = {
   nav: 'top',             // section navigation: 'top' (sticky tab bar), 'side' (floating tabs on the left), or 'none'
   shrinkWeeks: 3,         // how strongly early-season averages are pulled toward league average
   deadlineWindow: 3,     // within this many weeks of the trade deadline, suggested deals only pair teams that would realistically trade
-  youngAge: 25,          // players this age or younger count as young assets a rebuilding team would want
+  youngAge: 25,
+  minSwapValue: 2000,    // both players in a suggested 1-for-1 swap must be worth at least this much on KeepTradeCut          // players this age or younger count as young assets a rebuilding team would want
   medianTracker: 'dabears544',  // manager (Sleeper username or team name) to track against the median all season
   tradeTracker: 'evanmoon2',    // manager whose trades get a KeepTradeCut value ledger
   show: {                 // set any of these to false to remove that section
@@ -571,7 +572,7 @@ function market(sim, W){
   if (!locked) cand.sort((x, y) => y.score - x.score).forEach(c => { if (matches.length >= 4 || used[c.a] || used[c.b]) return;
     const sa = seller(c.a), sb = seller(c.b);
     // conversation starter: a non-cornerstone from each side's surplus that comes out closest to even
-    let best = null; M[c.a].by[c.p].slice(1, 4).forEach(x => M[c.b].by[c.q].slice(1, 4).forEach(y => { if (x.v < 1500 || y.v < 1500) return;
+    let best = null; M[c.a].by[c.p].slice(1, 4).forEach(x => M[c.b].by[c.q].slice(1, 4).forEach(y => { if (x.v < (CONFIG.minSwapValue || 0) || y.v < (CONFIG.minSwapValue || 0)) return;
       if (strict && ((sa && !young(y)) || (sb && !young(x)))) return;
       const g = ktcEven([y.v], [x.v]); let sweet = null;
       if (Math.abs(g) >= 1400) { const from = g > 0 ? c.a : c.b, pk = pickFor(Math.abs(g)); if (strict && seller(from)) return; if (pk) sweet = { from, label: pk.label }; }
@@ -826,7 +827,7 @@ function render(W){
         order.map(r => { const m = M[r];
           return `<tr><td class="t">${esc(name(r))}</td><td style="text-align:left">${tag(m.outlook)}</td><td>${pct(sim[r].po)}</td>${MK_POS.map(k => `<td class="${cls(m.rank[k])}" title="${esc(m.by[k].slice(0, MK_DEPTH[k]).map(x => x.name).join(', ') || 'none ranked')}"><b>${ord(m.rank[k])}</b></td>`).join('')}<td>${ord(m.totalRank)} <span class="muted">${Math.round(m.total / 1000)}k</span></td><td class="${led[r].n ? '' : 'loss'}">${led[r].n || 'none'}</td></tr>`; }).join('') + `</table></div>`;
       if (matches.length) {
-        h += `<h2 style="font-size:20px;margin-top:18px">Natural trade partners</h2><p class="note">Pairs whose strengths and holes mirror each other. The suggested deal is a conversation starter: one non-cornerstone player from each side's surplus that comes out close to even on KeepTradeCut value with the package premium.${strict ? ` With the deadline close, deals only pair teams that would realistically trade: two teams still competing, or a contender and a rebuilder where the rebuilder gets the younger player (${CONFIG.youngAge} or under). Two rebuilders only match on young-for-young swaps.` : ''}</p><div class="grid g2">` +
+        h += `<h2 style="font-size:20px;margin-top:18px">Natural trade partners</h2><p class="note">Pairs whose strengths and holes mirror each other. The suggested deal is a conversation starter: one non-cornerstone player from each side's surplus, each worth at least ${CONFIG.minSwapValue.toLocaleString()} on KeepTradeCut, that comes out close to even on KeepTradeCut value with the package premium.${strict ? ` With the deadline close, deals only pair teams that would realistically trade: two teams still competing, or a contender and a rebuilder where the rebuilder gets the younger player (${CONFIG.youngAge} or under). Two rebuilders only match on young-for-young swaps.` : ''}</p><div class="grid g2">` +
           matches.map(c => { const A = M[c.a], B = M[c.b], d = c.deal;
             const line = (m, s, w) => `<div style="margin:6px 0"><b>${esc(name(m.rid))}</b> ${tag(m.outlook)} <span class="muted">is</span> <span class="win">${ord(m.rank[s])} at ${s}</span> <span class="muted">but</span> <span class="loss">${ord(m.rank[w])} at ${w}</span></div>`;
             return `<div class="card">${line(A, c.p, c.q)}${line(B, c.q, c.p)}${d ? `<div class="hist" style="font-size:13px;color:var(--ink);border-top:1px solid var(--line);margin-top:10px;padding-top:10px"><span class="tag gold">Conversation starter</span>${d.why ? ` <span class="muted" style="font-size:12px">${esc(d.why)}</span>` : ''}<br>${esc(name(c.a))} sends <b>${esc(d.x.name)}</b> <span class="muted">(${d.x.pos}${d.x.age ? ', ' + d.x.age : ''}, ${d.x.v.toLocaleString()})</span>${d.sweet && d.sweet.from === c.a ? ` + a ${esc(d.sweet.label)}` : ''}<br>${esc(name(c.b))} sends <b>${esc(d.y.name)}</b> <span class="muted">(${d.y.pos}${d.y.age ? ', ' + d.y.age : ''}, ${d.y.v.toLocaleString()})</span>${d.sweet && d.sweet.from === c.b ? ` + a ${esc(d.sweet.label)}` : ''}</div>` : ''}</div>`; }).join('') + `</div>`;
